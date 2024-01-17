@@ -1,19 +1,17 @@
 pipeline {
     agent any
 
-    environment {
-        SERVER_IP = 'ubuntu@35.154.138.52'
-        NODE_VERSION = '14'  // Change this to your desired Node.js version
+    tools {
+        nodejs 'NodeJS' // Use the Node.js tool configured in Jenkins
     }
 
     stages {
         stage('Build') {
             steps {
                 echo 'Building the Node.js application...'
-                // Add your Node.js build steps here, e.g., npm install, npm run build
-                // Example:
+                // Add your build steps here, e.g., npm install, npm run build
                 sh 'npm install'
-                sh 'npm run build'
+                // Add additional build steps as needed
             }
         }
 
@@ -25,7 +23,7 @@ pipeline {
             }
             steps {
                 echo 'Deploying to Development Environment'
-                deployToServer('development')
+                // Your deployment steps for the Development environment go here
             }
         }
 
@@ -37,7 +35,7 @@ pipeline {
             }
             steps {
                 echo 'Deploying to Production Environment'
-                deployToServer('production')
+                // Your deployment steps for the Production environment go here
             }
         }
 
@@ -49,7 +47,7 @@ pipeline {
             }
             steps {
                 echo 'Deploying to Staging Environment'
-                deployToServer('staging')
+                // Your deployment steps for the Staging environment go here
             }
         }
 
@@ -63,18 +61,5 @@ pipeline {
         failure {
             echo 'Pipeline failed! At least one stage failed.'
         }
-    }
-}
-
-def deployToServer(deploymentDirectory) {
-    script {
-        // Create the deployment directory if it doesn't exist
-        sh "ssh ${SERVER_IP} 'mkdir -p /home/ubuntu/${deploymentDirectory}'"
-
-        // Copy Node.js application files to the deployment directory
-        sh "scp -r * ${SERVER_IP}:/home/ubuntu/${deploymentDirectory}"
-
-        // Restart your Node.js application, e.g., using pm2
-        sh "ssh ${SERVER_IP} 'cd /home/ubuntu/${deploymentDirectory} && pm2 restart your-app'"
     }
 }
