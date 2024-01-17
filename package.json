@@ -1,0 +1,12 @@
+{
+  "name": "project-bookmanagementgroup11",
+  "version": "1.0.0",
+  "description": "Simple Node.js project",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "express": "^4.17.3"
+  }
+}

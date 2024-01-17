@@ -1,0 +1,72 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                script {
+                    checkout scm
+                }
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    sh 'npm install'
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                script {
+                    // Your build script or commands go here (if any)
+                    // This is a simple Node.js project, so no specific build step is needed
+                }
+            }
+        }
+
+        stage('Deploy to Development') {
+            when {
+                expression {
+                    return (env.BRANCH_NAME == 'DEVELOPMENT')
+                }
+            }
+            steps {
+                script {
+                    echo 'Deploying to Development Environment'
+                    // Your deployment steps for the Development environment go here
+                }
+            }
+        }
+
+        stage('Deploy to Staging') {
+            when {
+                expression {
+                    return (env.BRANCH_NAME == 'STAGING')
+                }
+            }
+            steps {
+                script {
+                    echo 'Deploying to Staging Environment'
+                    // Your deployment steps for the Staging environment go here
+                }
+            }
+        }
+
+        stage('Deploy to Production') {
+            when {
+                expression {
+                    return (env.BRANCH_NAME == 'Prodction')
+                }
+            }
+            steps {
+                script {
+                    echo 'Deploying to Production Environment'
+                    // Your deployment steps for the Production environment go here
+                }
+            }
+        }
+    }
+}
