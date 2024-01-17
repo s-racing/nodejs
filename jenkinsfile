@@ -6,8 +6,8 @@ pipeline {
     }
 
     tools {
-        // Define the Node.js installation named 'NodeJS'
-        nodejs 'NodeJS'
+        // Use the correct tool name configured in Global Tool Configuration
+        nodejs 'NodeJSInstallation'
     }
 
     stages {
@@ -23,8 +23,10 @@ pipeline {
 
         stage('Deploy to Server') {
             steps {
-                echo "Deploying to ${env.BRANCH_NAME} Environment"
-                deployToServer(env.BRANCH_NAME)
+                script {
+                    echo "Deploying to ${env.BRANCH_NAME} Environment"
+                    deployToServer(env.BRANCH_NAME)
+                }
             }
         }
 
@@ -41,6 +43,7 @@ pipeline {
     }
 }
 
+// Function to deploy to the server
 def deployToServer(deploymentDirectory) {
     script {
         // Create the deployment directory if it doesn't exist
