@@ -2,30 +2,7 @@ pipeline {
     agent any
 
     stages {
-        stage('Checkout') {
-            steps {
-                script {
-                    checkout scm
-                }
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                script {
-                    sh 'npm install'
-                }
-            }
-        }
-
-        stage('Build') {
-            steps {
-                script {
-                    // Your build script or commands go here (if any)
-                    // This is a simple Node.js project, so no specific build step is needed
-                }
-            }
-        }
+        // Previous stages...
 
         stage('Deploy to Development') {
             when {
@@ -41,32 +18,7 @@ pipeline {
             }
         }
 
-        stage('Deploy to Staging') {
-            when {
-                expression {
-                    return (env.BRANCH_NAME == 'Staging')
-                }
-            }
-            steps {
-                script {
-                    echo 'Deploying to Staging Environment'
-                    // Your deployment steps for the Staging environment go here
-                }
-            }
-        }
+        // Other stages...
 
-        stage('Deploy to Production') {
-            when {
-                expression {
-                    return (env.BRANCH_NAME == 'Production')
-                }
-            }
-            steps {
-                script {
-                    echo 'Deploying to Production Environment'
-                    // Your deployment steps for the Production environment go here
-                }
-            }
-        }
     }
 }
