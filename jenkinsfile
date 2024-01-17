@@ -1,52 +1,29 @@
 pipeline {
     agent any
 
+    environment {
+        SERVER_IP = 'ubuntu@65.2.178.3'
+    }
+
     stages {
         stage('Build') {
             steps {
-                echo 'Building the application...'
-                // Add your build steps here
+                echo 'Building the Node.js application...'
+                // Add your Node.js build steps here, e.g., npm install, npm run build
+                // Example:
+                sh 'npm install'
+                sh 'npm run build'
             }
         }
 
-        stage('Deploy to Development') {
-            when {
-                expression {
-                    return (env.BRANCH_NAME == 'Development')
-                }
-            }
+        stage('Deploy to Server') {
             steps {
-                echo 'Deploying to Development Environment'
-                // Your deployment steps for the Development environment go here
-            }
-        }
-
-        stage('Deploy to Production') {
-            when {
-                expression {
-                    return (env.BRANCH_NAME == 'Production')
-                }
-            }
-            steps {
-                echo 'Deploying to Production Environment'
-                // Your deployment steps for the Production environment go here
-            }
-        }
-
-        stage('Deploy to Staging') {
-            when {
-                expression {
-                    return (env.BRANCH_NAME == 'Staging')
-                }
-            }
-            steps {
-                echo 'Deploying to Staging Environment'
-                // Your deployment steps for the Staging environment go here
+                echo "Deploying to ${env.BRANCH_NAME} Environment"
+                deployToServer(env.BRANCH_NAME)
             }
         }
 
         // Add more stages as needed
-
     }
 
     post {
@@ -56,6 +33,19 @@ pipeline {
         failure {
             echo 'Pipeline failed! At least one stage failed.'
         }
+    }
+}
+
+def deployToServer(deploymentDirectory) {
+    script {
+        // Create the deployment directory if it doesn't exist
+        sh "ssh ${SERVER_IP} 'mkdir -p /home/ubuntu/${deploymentDirectory}'"
+
+        // Copy Node.js application files to the deployment directory
+        sh "scp -r * ${SERVER_IP}:/home/ubuntu/${deploymentDirectory}"
+
+        // Restart your Node.js application, e.g., using pm2
+        sh "ssh ${SERVER_IP} 'cd /home/ubuntu/${deploymentDirectory} && pm2 restart your-app'"
     }
 }
 
