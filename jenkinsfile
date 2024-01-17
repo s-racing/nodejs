@@ -30,7 +30,7 @@ pipeline {
         stage('Deploy to Development') {
             when {
                 expression {
-                    return (env.BRANCH_NAME == 'DEVELOPMENT')
+                    return (env.BRANCH_NAME == 'Development')
                 }
             }
             steps {
@@ -44,7 +44,7 @@ pipeline {
         stage('Deploy to Staging') {
             when {
                 expression {
-                    return (env.BRANCH_NAME == 'STAGING')
+                    return (env.BRANCH_NAME == 'Staging')
                 }
             }
             steps {
@@ -58,7 +58,7 @@ pipeline {
         stage('Deploy to Production') {
             when {
                 expression {
-                    return (env.BRANCH_NAME == 'Prodction')
+                    return (env.BRANCH_NAME == 'Production')
                 }
             }
             steps {
@@ -70,3 +70,4 @@ pipeline {
         }
     }
 }
+
