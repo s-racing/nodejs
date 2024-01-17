@@ -2,7 +2,12 @@ pipeline {
     agent any
 
     stages {
-        // Previous stages...
+        stage('Build') {
+            steps {
+                echo 'Building the application...'
+                // Add your build steps here
+            }
+        }
 
         stage('Deploy to Development') {
             when {
@@ -11,14 +16,45 @@ pipeline {
                 }
             }
             steps {
-                script {
-                    echo 'Deploying to Development Environment'
-                    // Your deployment steps for the Development environment go here
-                }
+                echo 'Deploying to Development Environment'
+                // Your deployment steps for the Development environment go here
             }
         }
 
-        // Other stages...
+        stage('Deploy to Production') {
+            when {
+                expression {
+                    return (env.BRANCH_NAME == 'Production')
+                }
+            }
+            steps {
+                echo 'Deploying to Production Environment'
+                // Your deployment steps for the Production environment go here
+            }
+        }
 
+        stage('Deploy to Staging') {
+            when {
+                expression {
+                    return (env.BRANCH_NAME == 'Staging')
+                }
+            }
+            steps {
+                echo 'Deploying to Staging Environment'
+                // Your deployment steps for the Staging environment go here
+            }
+        }
+
+        // Add more stages as needed
+
+    }
+
+    post {
+        success {
+            echo 'Pipeline succeeded! All stages completed successfully.'
+        }
+        failure {
+            echo 'Pipeline failed! At least one stage failed.'
+        }
     }
 }
