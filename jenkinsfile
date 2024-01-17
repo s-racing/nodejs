@@ -2,17 +2,16 @@ pipeline {
     agent any
 
     environment {
-        SERVER_IP = 'ubuntu@35.154.138.52    '
-    }
-
-    tools {
-        nodejs 'NodeJSInstallation'
+        SERVER_IP = 'ubuntu@35.154.138.52'
+        NODE_VERSION = '14'  // Change this to your desired Node.js version
     }
 
     stages {
         stage('Build') {
             steps {
                 echo 'Building the Node.js application...'
+                // Add your Node.js build steps here, e.g., npm install, npm run build
+                // Example:
                 sh 'npm install'
                 sh 'npm run build'
             }
@@ -26,7 +25,7 @@ pipeline {
             }
             steps {
                 echo 'Deploying to Development Environment'
-                deployToServer('Development')
+                deployToServer('development')
             }
         }
 
@@ -38,7 +37,7 @@ pipeline {
             }
             steps {
                 echo 'Deploying to Production Environment'
-                deployToServer('Production')
+                deployToServer('production')
             }
         }
 
@@ -50,9 +49,11 @@ pipeline {
             }
             steps {
                 echo 'Deploying to Staging Environment'
-                deployToServer('Staging')
+                deployToServer('staging')
             }
         }
+
+        // Add more stages as needed
     }
 
     post {
