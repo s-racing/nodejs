@@ -34,40 +34,10 @@ pipeline {
                 }
             }
             steps {
-                script {
-                    echo 'Deploying to Development Environment'
-                    // Your deployment steps for the Development environment go here
-                }
+                echo 'Deploying to Development Environment'
+                // Your deployment steps for the Development environment go here
             }
         }
 
         stage('Deploy to Staging') {
-            when {
-                expression {
-                    return (env.BRANCH_NAME == 'Staging')
-                }
-            }
-            steps {
-                script {
-                    echo 'Deploying to Staging Environment'
-                    // Your deployment steps for the Staging environment go here
-                }
-            }
-        }
-
-        stage('Deploy to Production') {
-            when {
-                expression {
-                    return (env.BRANCH_NAME == 'Production')
-                }
-            }
-            steps {
-                script {
-                    echo 'Deploying to Production Environment'
-                    // Your deployment steps for the Production environment go here
-                }
-            }
-        }
-    }
-}
-
+            when 
