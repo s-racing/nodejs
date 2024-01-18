@@ -33,11 +33,10 @@ pipeline {
             steps {
                 script {
                     echo "Known Hosts Content:"
-                    sh "cat /home/ubuntu/.ssh/known_hosts"
-
                     // Fixing Permissions and Ownership
+                    sh "sudo chown ubuntu:ubuntu /home/ubuntu/.ssh/known_hosts"
                     sh "chmod 644 /home/ubuntu/.ssh/known_hosts"
-                    sh "chown ubuntu:ubuntu /home/ubuntu/.ssh/known_hosts"
+                    sh "cat /home/ubuntu/.ssh/known_hosts"
 
                     withCredentials([sshUserPrivateKey(credentialsId: 'your-ssh-credentials-id', keyFileVariable: 'SSH_KEY')]) {
                         // Copy artifacts to the remote server using SCP
