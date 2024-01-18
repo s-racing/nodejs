@@ -1,14 +1,24 @@
 pipeline {
     agent any
 
+    environment {
+        SSH_USERNAME = 'ubuntu'
+        SSH_HOST = '35.154.138.52'
+        SSH_REMOTE_PATH = '/home/ubuntu'
+        SSH_CREDENTIALS = '6aeb7266-d306-4a8e-b464-470a81cc52a7'
+    }
+
     stages {
         stage('Install Node.js and npm') {
             steps {
                 script {
+                    // Install Node.js using the NodeJS Jenkins plugin
+                    // 'nodejs' should match the tool name you configured in Jenkins
                     def nodejsInstallation = tool name: 'nodejs', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
                     def nodejsHome = "${nodejsInstallation}/bin"
                     env.PATH = "${nodejsHome}:${env.PATH}"
 
+                    // Install npm version 8 globally
                     sh 'npm install -g npm@8'
                 }
             }
@@ -24,13 +34,10 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    echo "Deploying to EC2 Instance for branch: ${BRANCH_NAME}"
+                    echo "Deploying to SSH host: ${SSH_HOST}"
 
-                    // Ensure correct permissions for the private key
-                    sh 'sudo chmod 600 /root/.ssh/id_rsa'
-
-                    // Copy project files to the respective directory on the EC2 instance using SCP
-                    sh "scp -r -i /root/.ssh/id_rsa ${WORKSPACE} ubuntu@35.154.138.52:/home/ubuntu/${BRANCH_NAME.toLowerCase()}/"
+                    // Copy project files to the remote directory on the SSH host using SCP
+                    sh "scp -r -i /root/.ssh/id_rsa ./* ${SSH_USERNAME}@${SSH_HOST}:${SSH_REMOTE_PATH}/"
                 }
             }
         }
@@ -48,3 +55,4 @@ pipeline {
         }
     }
 }
+
