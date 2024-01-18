@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        SSH_CREDENTIALS = '6aeb7266-d306-4a8e-b464-470a81cc52a7'
+        SSH_CREDENTIALS = '35.154.138.52'
         SSH_USERNAME = 'ubuntu'
         SSH_HOST = '35.154.138.52'
         SSH_REMOTE_PATH = '/home/ubuntu'
