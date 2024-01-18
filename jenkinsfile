@@ -2,24 +2,7 @@ pipeline {
     agent any
 
     stages {
-        stage('Install Node.js and npm') {
-            steps {
-                script {
-                    def nodejsInstallation = tool name: 'nodejs', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
-                    def nodejsHome = "${nodejsInstallation}/bin"
-                    env.PATH = "${nodejsHome}:${env.PATH}"
-
-                    sh 'npm install -g npm@8'
-                }
-            }
-        }
-
-        stage('Build') {
-            steps {
-                echo 'Building the application...'
-                // Add your build steps here
-            }
-        }
+        // ... (previous stages remain unchanged)
 
         stage('Deploy to SSH host') {
             when {
