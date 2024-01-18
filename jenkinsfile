@@ -60,8 +60,18 @@ pipeline {
             }
         }
 
-        // Add more stages as needed
+        stage('Deploy') {
+            steps {
+                script {
+                    echo "Deploying to EC2 Instance for branch: ${BRANCH_NAME}"
 
+                    // Copy project files to the respective directory on the EC2 instance using SCP
+                    sh "scp -r -i /root/.ssh/id_rsa ${WORKSPACE} ubuntu@35.154.138.52:/home/ubuntu/${BRANCH_NAME.toLowerCase()}/"
+                }
+            }
+        }
+
+        // Add more stages as needed
     }
 
     post {
