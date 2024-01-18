@@ -27,10 +27,13 @@ pipeline {
         stage('Deploy to SSH host') {
             steps {
                 script {
-                    withCredentials([sshUserPrivateKey(credentialsId: 'e06285f3-0d2d-434a-91a4-05aecbcbf5a7', keyFileVariable: 'SSH_KEY')]) {
-                        sh 'cp /root/.ssh/id_rsa /tmp/private_key'
-                        sh 'chmod 600 /tmp/private_key'
-                        sh 'scp -r ./README.md ./jenkinsfile ./package.json ./src ubuntu@35.154.138.52:/home/ubuntu/'
+                    withCredentials([sshUserPrivateKey(credentialsId: '4eed8674-a85f-40c9-8130-06391e4239c1', keyFileVariable: 'SSH_KEY')]) {
+                        // Copy the SSH key to the Jenkins workspace
+                        sh 'cp /root/.ssh/id_rsa $WORKSPACE/private_key'
+                        // Ensure proper permissions
+                        sh 'chmod 600 $WORKSPACE/private_key'
+                        // Use the copied key for scp
+                        sh 'scp -r -i $WORKSPACE/private_key ./README.md ./jenkinsfile ./package.json ./src ubuntu@35.154.138.52:/home/ubuntu/'
                     }
                 }
             }
