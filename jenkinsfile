@@ -6,6 +6,7 @@ pipeline {
         SSH_USERNAME = 'ubuntu'
         SSH_HOST = '35.154.138.52'
         SSH_REMOTE_PATH = '/home/ubuntu'
+        SSH_KEY_FILE = '/tmp/private_key'
     }
 
     stages {
@@ -32,9 +33,17 @@ pipeline {
 
         stage('Deploy to SSH host') {
             steps {
+                withCredentials([sshUserPrivateKey(credentialsId: SSH_CREDENTIALS, keyFileVariable: 'SSH_KEY_FILE')]) {
+                    script {
+                        // Create a temporary private key file
+                        sh 'echo "$SSH_KEY_FILE" > /tmp/private_key'
+                        sh 'chmod 600 /tmp/private_key'
+                    }
+                }
+
                 script {
                     // Use the SSH key with sshagent
-                    sshagent(credentials: [SSH_CREDENTIALS]) {
+                    sshagent(credentialType: 'file', keyfile: '/tmp/private_key') {
                         // Copy project files to the remote directory on the server using SCP
                         sh "scp -r ./README.md ./jenkinsfile ./package.json ./src ${SSH_USERNAME}@${SSH_HOST}:${SSH_REMOTE_PATH}/"
                     }
