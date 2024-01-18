@@ -2,32 +2,21 @@ pipeline {
     agent any
 
     environment {
-        SSH_CREDENTIALS = '4eed8674-a85f-40c9-8130-06391e4239c1'  // Replace with your actual SSH key credential ID
-        SSH_USERNAME = 'ubuntu'
-        SSH_HOST = '35.154.138.52'
-        SSH_REMOTE_PATH = '/home/ubuntu'
-        SSH_KEY_FILE = '/tmp/private_key'
+        NODEJS_HOME = tool name: 'NodeJS 14', type: 'jsInstaller'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                script {
-                    // Checkout the Git repository manually
-                    git url: 'https://github.com/s-racing/nodejs.git', branch: 'Development', credentialsId: SSH_CREDENTIALS
-                }
+                checkout scm
             }
         }
 
         stage('Install Node.js and npm') {
             steps {
                 script {
-                    // Install Node.js using the NodeJS Jenkins plugin
-                    def nodejsInstallation = tool name: 'nodejs', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
-                    def nodejsHome = "${nodejsInstallation}/bin"
-                    env.PATH = "${nodejsHome}:${env.PATH}"
-
-                    // Install npm version 8 globally
+                    tool name: 'NodeJS 14', type: 'jsInstaller'
+                    env.PATH = "${env.NODEJS_HOME}/bin:${env.PATH}"
                     sh 'npm install -g npm@8'
                 }
             }
@@ -43,23 +32,20 @@ pipeline {
         stage('Deploy to SSH host') {
             steps {
                 script {
-                    // Create a temporary private key file
-                    sh 'echo "$SSH_KEY_FILE" > /tmp/private_key'
-                    sh 'chmod 600 /tmp/private_key'
-
-                    // Copy project files to the remote directory on the server using SCP
-                    sh "scp -r ./README.md ./jenkinsfile ./package.json ./src ${SSH_USERNAME}@${SSH_HOST}:${SSH_REMOTE_PATH}/"
+                    withCredentials([sshUserPrivateKey(credentialsId: '4eed8674-a85f-40c9-8130-06391e4239c1', keyFileVariable: 'SSH_KEY')]) {
+                        sh 'echo $SSH_KEY > /tmp/private_key'
+                        sh 'chmod 600 /tmp/private_key'
+                        sh 'scp -r ./README.md ./jenkinsfile ./package.json ./src ubuntu@35.154.138.52:/home/ubuntu/'
+                    }
                 }
             }
         }
     }
 
     post {
-        success {
-            echo 'Pipeline succeeded! All stages completed successfully.'
-        }
-        failure {
-            echo 'Pipeline failed! At least one stage failed.'
+        always {
+            echo 'Cleaning up...'
+            // Add cleanup steps if necessary
         }
     }
 }
