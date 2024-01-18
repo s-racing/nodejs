@@ -1,22 +1,17 @@
 pipeline {
     agent any
 
-    environment {
-        NODEJS_HOME = tool name: 'NodeJS 14', type: 'jsInstaller'
-    }
-
     stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
         stage('Install Node.js and npm') {
             steps {
                 script {
-                    tool name: 'NodeJS 14', type: 'jsInstaller'
-                    env.PATH = "${env.NODEJS_HOME}/bin:${env.PATH}"
+                    // Install Node.js using the NodeJS Jenkins plugin
+                    // 'nodejs' should match the tool name you configured in Jenkins
+                    def nodejsInstallation = tool name: 'nodejs', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
+                    def nodejsHome = "${nodejsInstallation}/bin"
+                    env.PATH = "${nodejsHome}:${env.PATH}"
+
+                    // Install npm version 8 globally
                     sh 'npm install -g npm@8'
                 }
             }
@@ -33,19 +28,59 @@ pipeline {
             steps {
                 script {
                     withCredentials([sshUserPrivateKey(credentialsId: '4eed8674-a85f-40c9-8130-06391e4239c1', keyFileVariable: 'SSH_KEY')]) {
-                        sh 'echo $SSH_KEY > /tmp/private_key'
+                        sh 'cp /root/.ssh/id_rsa /tmp/private_key'
                         sh 'chmod 600 /tmp/private_key'
                         sh 'scp -r ./README.md ./jenkinsfile ./package.json ./src ubuntu@35.154.138.52:/home/ubuntu/'
                     }
                 }
             }
         }
+
+        stage('Deploy to Development') {
+            when {
+                expression {
+                    return (env.BRANCH_NAME == 'Development')
+                }
+            }
+            steps {
+                echo 'Deploying to Development Environment'
+                // Your deployment steps for the Development environment go here
+            }
+        }
+
+        stage('Deploy to Production') {
+            when {
+                expression {
+                    return (env.BRANCH_NAME == 'Production')
+                }
+            }
+            steps {
+                echo 'Deploying to Production Environment'
+                // Your deployment steps for the Production environment go here
+            }
+        }
+
+        stage('Deploy to Staging') {
+            when {
+                expression {
+                    return (env.BRANCH_NAME == 'Staging')
+                }
+            }
+            steps {
+                echo 'Deploying to Staging Environment'
+                // Your deployment steps for the Staging environment go here
+            }
+        }
+
+        // Add more stages as needed
     }
 
     post {
-        always {
-            echo 'Cleaning up...'
-            // Add cleanup steps if necessary
+        success {
+            echo 'Pipeline succeeded! All stages completed successfully.'
+        }
+        failure {
+            echo 'Pipeline failed! At least one stage failed.'
         }
     }
 }
