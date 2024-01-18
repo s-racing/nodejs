@@ -38,6 +38,9 @@ pipeline {
                     sh "chmod 644 /home/ubuntu/.ssh/known_hosts"
                     sh "cat /home/ubuntu/.ssh/known_hosts"
 
+                    // Configuring passwordless sudo for the specific command
+                    sh 'echo "jenkins ALL=(ALL) NOPASSWD: /bin/chown" | sudo tee -a /etc/sudoers.d/jenkins-chown'
+                    
                     withCredentials([sshUserPrivateKey(credentialsId: 'your-ssh-credentials-id', keyFileVariable: 'SSH_KEY')]) {
                         // Copy artifacts to the remote server using SCP
                         sh "scp -r /var/lib/jenkins/workspace/newnd_${env.BRANCH_NAME} ubuntu@13.232.231.36:/home/ubuntu/"
