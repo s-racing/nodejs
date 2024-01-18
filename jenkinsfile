@@ -2,7 +2,41 @@ pipeline {
     agent any
 
     stages {
-        // Previous stages remain unchanged
+        stage('Install Node.js and npm') {
+            steps {
+                script {
+                    // Install Node.js using the NodeJS Jenkins plugin
+                    // 'nodejs' should match the tool name you configured in Jenkins
+                    def nodejsInstallation = tool name: 'nodejs', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
+                    def nodejsHome = "${nodejsInstallation}/bin"
+                    env.PATH = "${nodejsHome}:${env.PATH}"
+
+                    // Install npm version 8 globally
+                    sh 'npm install -g npm@8'
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo 'Building the application...'
+                // Add your build steps here
+            }
+        }
+
+        stage('Prepare Target Server') {
+            when {
+                expression {
+                    return (env.BRANCH_NAME == 'Development' || env.BRANCH_NAME == 'Production' || env.BRANCH_NAME == 'Staging')
+                }
+            }
+            steps {
+                script {
+                    // SSH into the target server and create a directory
+                    sh "ssh ubuntu@13.232.231.36 'mkdir -p /home/ubuntu/newnd_Development'"
+                }
+            }
+        }
 
         stage('Deploy to SSH host') {
             when {
@@ -12,13 +46,14 @@ pipeline {
             }
             steps {
                 script {
-                    // Assuming you have already set up passwordless SSH access
-                    sh "ssh ubuntu@13.232.231.36 'mkdir -p /home/ubuntu/newnd_${env.BRANCH_NAME} && scp -r /var/lib/jenkins/workspace/newnd_${env.BRANCH_NAME}/* /home/ubuntu/newnd_${env.BRANCH_NAME}/'"
+                    // Copy artifacts to the remote server using SCP
+                    sh "scp -r /var/lib/jenkins/workspace/newnd_${env.BRANCH_NAME} ubuntu@13.232.231.36:/home/ubuntu/newnd_Development/"
                 }
             }
         }
 
         // Add more stages as needed
+
     }
 
     post {
@@ -30,4 +65,3 @@ pipeline {
         }
     }
 }
-
