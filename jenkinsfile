@@ -33,8 +33,11 @@ pipeline {
             steps {
                 script {
                     withCredentials([sshUserPrivateKey(credentialsId: '4eed8674-a85f-40c9-8130-06391e4239c1', keyFileVariable: 'SSH_KEY')]) {
+                        // Adjust key file permissions
+                        sh 'chmod 600 ${SSH_KEY}'
+
                         // Copy artifacts to the remote server using SCP
-                        sh "scp -r /var/lib/jenkins/workspace/newnd_${env.BRANCH_NAME} ubuntu@13.232.231.36:/home/ubuntu/"
+                        sh "scp -r ${WORKSPACE} ubuntu@13.232.231.36:/home/ubuntu/"
                     }
                 }
             }
