@@ -25,57 +25,23 @@ pipeline {
         }
 
         stage('Deploy to SSH host') {
+            when {
+                expression {
+                    return (env.BRANCH_NAME == 'Development' || env.BRANCH_NAME == 'Production' || env.BRANCH_NAME == 'Staging')
+                }
+            }
             steps {
                 script {
                     withCredentials([sshUserPrivateKey(credentialsId: '4eed8674-a85f-40c9-8130-06391e4239c1', keyFileVariable: 'SSH_KEY')]) {
-                        // Copy the SSH key to the Jenkins workspace
-                        sh 'cp /root/.ssh/id_rsa $WORKSPACE/private_key'
-                        // Ensure proper permissions
-                        sh 'chmod 600 $WORKSPACE/private_key'
-                        // Use the copied key for scp
-                        sh 'scp -r -i $WORKSPACE/private_key ./README.md ./jenkinsfile ./package.json ./src ubuntu@35.154.138.52:/home/ubuntu/'
+                        // Copy artifacts to the remote server using SCP
+                        sh "scp -r /var/lib/jenkins/workspace/newnd_${env.BRANCH_NAME} ubuntu@13.232.231.36:/home/ubuntu/"
                     }
                 }
             }
         }
 
-        stage('Deploy to Development') {
-            when {
-                expression {
-                    return (env.BRANCH_NAME == 'Development')
-                }
-            }
-            steps {
-                echo 'Deploying to Development Environment'
-                // Your deployment steps for the Development environment go here
-            }
-        }
-
-        stage('Deploy to Production') {
-            when {
-                expression {
-                    return (env.BRANCH_NAME == 'Production')
-                }
-            }
-            steps {
-                echo 'Deploying to Production Environment'
-                // Your deployment steps for the Production environment go here
-            }
-        }
-
-        stage('Deploy to Staging') {
-            when {
-                expression {
-                    return (env.BRANCH_NAME == 'Staging')
-                }
-            }
-            steps {
-                echo 'Deploying to Staging Environment'
-                // Your deployment steps for the Staging environment go here
-            }
-        }
-
         // Add more stages as needed
+
     }
 
     post {
