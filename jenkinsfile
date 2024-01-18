@@ -10,6 +10,15 @@ pipeline {
     }
 
     stages {
+        stage('Checkout') {
+            steps {
+                script {
+                    // Checkout the Git repository manually
+                    git url: 'https://github.com/s-racing/nodejs.git', branch: 'Development', credentialsId: SSH_CREDENTIALS
+                }
+            }
+        }
+
         stage('Install Node.js and npm') {
             steps {
                 script {
@@ -33,20 +42,13 @@ pipeline {
 
         stage('Deploy to SSH host') {
             steps {
-                withCredentials([sshUserPrivateKey(credentialsId: SSH_CREDENTIALS, keyFileVariable: 'SSH_KEY_FILE')]) {
-                    script {
-                        // Create a temporary private key file
-                        sh 'echo "$SSH_KEY_FILE" > /tmp/private_key'
-                        sh 'chmod 600 /tmp/private_key'
-                    }
-                }
-
                 script {
-                    // Use the SSH key with sshagent
-                    sshagent(credentialType: 'file', keyfile: '/tmp/private_key') {
-                        // Copy project files to the remote directory on the server using SCP
-                        sh "scp -r ./README.md ./jenkinsfile ./package.json ./src ${SSH_USERNAME}@${SSH_HOST}:${SSH_REMOTE_PATH}/"
-                    }
+                    // Create a temporary private key file
+                    sh 'echo "$SSH_KEY_FILE" > /tmp/private_key'
+                    sh 'chmod 600 /tmp/private_key'
+
+                    // Copy project files to the remote directory on the server using SCP
+                    sh "scp -r ./README.md ./jenkinsfile ./package.json ./src ${SSH_USERNAME}@${SSH_HOST}:${SSH_REMOTE_PATH}/"
                 }
             }
         }
