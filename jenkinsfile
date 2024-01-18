@@ -2,12 +2,6 @@ pipeline {
     agent any
 
     stages {
-        stage('Checkout SCM') {
-            steps {
-                checkout([$class: 'GitSCM', branches: [[name: '*/Development']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'your-git-credentials-id', url: 'https://github.com/s-racing/nodejs.git']]])
-            }
-        }
-
         stage('Install Node.js and npm') {
             steps {
                 script {
@@ -31,33 +25,30 @@ pipeline {
         }
 
         stage('Deploy to SSH host') {
-            when {
-                expression {
-                    return (env.BRANCH_NAME == 'Development' || env.BRANCH_NAME == 'Production' || env.BRANCH_NAME == 'Staging')
-                }
-            }
             steps {
                 script {
                     echo 'Known Hosts Content:'
                     
                     // Fixing Permissions and Ownership
+                    sh "echo ubuntu ALL=(ALL) NOPASSWD: /bin/chown >> /etc/sudoers.d/jenkins-chown"
+                    sh "sudo chmod 440 /etc/sudoers.d/jenkins-chown"
+                    sh "sudo chown root:root /etc/sudoers.d/jenkins-chown"
+
                     sh "sudo chown ubuntu:ubuntu /home/ubuntu/.ssh/known_hosts"
                     sh "chmod 644 /home/ubuntu/.ssh/known_hosts"
                     sh "cat /home/ubuntu/.ssh/known_hosts"
 
-                    // Configuring passwordless sudo for the specific command
-                    sh 'echo "jenkins ALL=(ALL) NOPASSWD: /bin/chown" | sudo tee -a /etc/sudoers.d/jenkins-chown'
+                    // Use 'sudo' to run the chown command
+                    sh "sudo chown ubuntu:ubuntu /var/lib/jenkins/workspace/newnd_${env.BRANCH_NAME} -R"
 
-                    withCredentials([sshUserPrivateKey(credentialsId: 'your-ssh-credentials-id', keyFileVariable: 'SSH_KEY')]) {
-                        // Copy artifacts to the remote server using SCP
-                        sh "scp -r /var/lib/jenkins/workspace/newnd_${env.BRANCH_NAME} ubuntu@13.232.231.36:/home/ubuntu/"
-                    }
+                    // Example SCP command
+                    // Adjust the source and destination paths as needed
+                    sh "scp -r /var/lib/jenkins/workspace/newnd_${env.BRANCH_NAME} ubuntu@13.232.231.36:/home/ubuntu/"
                 }
             }
         }
 
         // Add more stages as needed
-
     }
 
     post {
@@ -69,4 +60,3 @@ pipeline {
         }
     }
 }
-
