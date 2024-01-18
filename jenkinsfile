@@ -24,20 +24,6 @@ pipeline {
             }
         }
 
-        stage('Prepare Target Server') {
-            when {
-                expression {
-                    return (env.BRANCH_NAME == 'Development' || env.BRANCH_NAME == 'Production' || env.BRANCH_NAME == 'Staging')
-                }
-            }
-            steps {
-                script {
-                    // SSH into the target server and create a directory
-                    sh "ssh ubuntu@13.232.231.36 'mkdir -p /home/ubuntu/newnd_Development'"
-                }
-            }
-        }
-
         stage('Deploy to SSH host') {
             when {
                 expression {
@@ -46,8 +32,17 @@ pipeline {
             }
             steps {
                 script {
-                    // Copy artifacts to the remote server using SCP
-                    sh "scp -r /var/lib/jenkins/workspace/newnd_${env.BRANCH_NAME} ubuntu@13.232.231.36:/home/ubuntu/newnd_Development/"
+                    echo "Known Hosts Content:"
+                    sh "cat /home/ubuntu/.ssh/known_hosts"
+
+                    // Fixing Permissions and Ownership
+                    sh "chmod 644 /home/ubuntu/.ssh/known_hosts"
+                    sh "chown ubuntu:ubuntu /home/ubuntu/.ssh/known_hosts"
+
+                    withCredentials([sshUserPrivateKey(credentialsId: 'your-ssh-credentials-id', keyFileVariable: 'SSH_KEY')]) {
+                        // Copy artifacts to the remote server using SCP
+                        sh "scp -r /var/lib/jenkins/workspace/newnd_${env.BRANCH_NAME} ubuntu@13.232.231.36:/home/ubuntu/"
+                    }
                 }
             }
         }
