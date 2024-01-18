@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     stages {
-        // ... (previous stages remain unchanged)
+        // Previous stages remain unchanged
 
         stage('Deploy to SSH host') {
             when {
@@ -12,9 +12,8 @@ pipeline {
             }
             steps {
                 script {
-                    withCredentials([sshUserPrivateKey(credentialsId: '4eed8674-a85f-40c9-8130-06391e4239c1', keyFileVariable: 'SSH_KEY')]) {
-                        sh "scp -r /var/lib/jenkins/workspace/newnd_${env.BRANCH_NAME} ubuntu@13.232.231.36:/home/ubuntu/"
-                    }
+                    // Assuming you have already set up passwordless SSH access
+                    sh "ssh ubuntu@13.232.231.36 'mkdir -p /home/ubuntu/newnd_${env.BRANCH_NAME} && scp -r /var/lib/jenkins/workspace/newnd_${env.BRANCH_NAME}/* /home/ubuntu/newnd_${env.BRANCH_NAME}/'"
                 }
             }
         }
@@ -31,3 +30,4 @@ pipeline {
         }
     }
 }
+
