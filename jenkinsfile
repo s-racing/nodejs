@@ -27,7 +27,7 @@ pipeline {
         stage('Deploy to SSH host') {
             steps {
                 script {
-                    withCredentials([sshUserPrivateKey(credentialsId: '4eed8674-a85f-40c9-8130-06391e4239c1', keyFileVariable: 'SSH_KEY')]) {
+                    withCredentials([sshUserPrivateKey(credentialsId: 'e06285f3-0d2d-434a-91a4-05aecbcbf5a7', keyFileVariable: 'SSH_KEY')]) {
                         sh 'cp /root/.ssh/id_rsa /tmp/private_key'
                         sh 'chmod 600 /tmp/private_key'
                         sh 'scp -r ./README.md ./jenkinsfile ./package.json ./src ubuntu@35.154.138.52:/home/ubuntu/'
