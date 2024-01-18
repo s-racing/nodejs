@@ -13,6 +13,8 @@ pipeline {
             steps {
                 script {
                     // Your existing Node.js installation steps
+                    // For example:
+                    sh 'npm install'
                 }
             }
         }
