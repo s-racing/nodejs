@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        SSH_CREDENTIALS = '35.154.138.52'
+        SSH_CREDENTIALS = '4eed8674-a85f-40c9-8130-06391e4239c1'  // Replace with your actual SSH key credential ID
         SSH_USERNAME = 'ubuntu'
         SSH_HOST = '35.154.138.52'
         SSH_REMOTE_PATH = '/home/ubuntu'
@@ -12,9 +12,13 @@ pipeline {
         stage('Install Node.js and npm') {
             steps {
                 script {
-                    // Your existing Node.js installation steps
-                    // For example:
-                    sh 'npm install'
+                    // Install Node.js using the NodeJS Jenkins plugin
+                    def nodejsInstallation = tool name: 'nodejs', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
+                    def nodejsHome = "${nodejsInstallation}/bin"
+                    env.PATH = "${nodejsHome}:${env.PATH}"
+
+                    // Install npm version 8 globally
+                    sh 'npm install -g npm@8'
                 }
             }
         }
@@ -31,8 +35,8 @@ pipeline {
                 script {
                     // Use the SSH key with sshagent
                     sshagent(credentials: [SSH_CREDENTIALS]) {
-                        // Copy project files to the remote directory on the EC2 instance using SCP
-                        sh "scp -r ./README.md ./jenkinsfile ./package.json ./src $SSH_USERNAME@$SSH_HOST:$SSH_REMOTE_PATH/"
+                        // Copy project files to the remote directory on the server using SCP
+                        sh "scp -r ./README.md ./jenkinsfile ./package.json ./src ${SSH_USERNAME}@${SSH_HOST}:${SSH_REMOTE_PATH}/"
                     }
                 }
             }
