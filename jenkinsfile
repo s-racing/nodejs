@@ -5,20 +5,34 @@ pipeline {
         SSH_CREDENTIALS = '6aeb7266-d306-4a8e-b464-470a81cc52a7'
         SSH_USERNAME = 'ubuntu'
         SSH_HOST = '35.154.138.52'
-        REMOTE_PATH = '/home/ubuntu/'
+        SSH_REMOTE_PATH = '/home/ubuntu'
     }
 
     stages {
-        stage('Deploy to SSH host') {
+        stage('Install Node.js and npm') {
             steps {
                 script {
-                    // Fetch the SSH private key from Jenkins credentials
-                    withCredentials([sshUserPrivateKey(credentialsId: SSH_CREDENTIALS, keyFileVariable: 'SSH_PRIVATE_KEY')]) {
-                        // Add remote host key to known_hosts
-                        sh "ssh-keyscan -H ${SSH_HOST} >> ~/.ssh/known_hosts"
+                    // Your existing Node.js installation steps
+                }
+            }
+        }
 
-                        // Copy project files to the remote directory on the SSH host using SCP
-                        sh "scp -r -i \$SSH_PRIVATE_KEY ./* ${SSH_USERNAME}@${SSH_HOST}:${REMOTE_PATH}"
+        stage('Build') {
+            steps {
+                echo 'Building the application...'
+                // Add your build steps here
+            }
+        }
+
+        stage('Deploy to SSH host') {
+            steps {
+                withCredentials([sshUserPrivateKey(credentialsId: SSH_CREDENTIALS, keyFileVariable: 'SSH_PRIVATE_KEY')]) {
+                    script {
+                        // Set permissions for .ssh directory and files
+                        sh 'mkdir -p $HOME/.ssh && chmod 700 $HOME/.ssh && touch $HOME/.ssh/known_hosts && chmod 644 $HOME/.ssh/known_hosts'
+                        
+                        // Copy project files to the remote directory on the EC2 instance using SCP
+                        sh "scp -r -i \$SSH_PRIVATE_KEY ./README.md ./jenkinsfile ./package.json ./src $SSH_USERNAME@$SSH_HOST:$SSH_REMOTE_PATH/"
                     }
                 }
             }
@@ -27,10 +41,10 @@ pipeline {
 
     post {
         success {
-            echo 'Deployment succeeded!'
+            echo 'Pipeline succeeded! All stages completed successfully.'
         }
         failure {
-            echo 'Deployment failed!'
+            echo 'Pipeline failed! At least one stage failed.'
         }
     }
 }
