@@ -2,57 +2,32 @@ pipeline {
     agent any
 
     environment {
+        SSH_CREDENTIALS = '6aeb7266-d306-4a8e-b464-470a81cc52a7'
         SSH_USERNAME = 'ubuntu'
         SSH_HOST = '35.154.138.52'
-        SSH_REMOTE_PATH = '/home/ubuntu'
-        SSH_CREDENTIALS = '6aeb7266-d306-4a8e-b464-470a81cc52a7'
+        REMOTE_PATH = '/home/ubuntu/'
     }
 
     stages {
-        stage('Install Node.js and npm') {
+        stage('Deploy to SSH host') {
             steps {
                 script {
-                    // Install Node.js using the NodeJS Jenkins plugin
-                    // 'nodejs' should match the tool name you configured in Jenkins
-                    def nodejsInstallation = tool name: 'nodejs', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
-                    def nodejsHome = "${nodejsInstallation}/bin"
-                    env.PATH = "${nodejsHome}:${env.PATH}"
-
-                    // Install npm version 8 globally
-                    sh 'npm install -g npm@8'
+                    // Fetch the SSH private key from Jenkins credentials
+                    withCredentials([sshUserPrivateKey(credentialsId: SSH_CREDENTIALS, keyFileVariable: 'SSH_PRIVATE_KEY')]) {
+                        // Copy project files to the remote directory on the SSH host using SCP
+                        sh "scp -r -i \$SSH_PRIVATE_KEY ./* ${SSH_USERNAME}@${SSH_HOST}:${REMOTE_PATH}"
+                    }
                 }
             }
         }
-
-        stage('Build') {
-            steps {
-                echo 'Building the application...'
-                // Add your build steps here
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                script {
-                    echo "Deploying to SSH host: ${SSH_HOST}"
-
-                    // Copy project files to the remote directory on the SSH host using SCP
-                    sh "scp -r -i /root/.ssh/id_rsa ./* ${SSH_USERNAME}@${SSH_HOST}:${SSH_REMOTE_PATH}/"
-                }
-            }
-        }
-
-        // Add more stages as needed
-
     }
 
     post {
         success {
-            echo 'Pipeline succeeded! All stages completed successfully.'
+            echo 'Deployment succeeded!'
         }
         failure {
-            echo 'Pipeline failed! At least one stage failed.'
+            echo 'Deployment failed!'
         }
     }
 }
-
