@@ -41,6 +41,9 @@ pipeline {
                     // Create an SSH configuration file to disable strict host key checking
                     sh 'echo "Host *\n  StrictHostKeyChecking no" > /var/lib/jenkins/.ssh/config'
 
+                    // Make Jenkins user the owner of the Jenkins home directory
+                    sh 'sudo chown -R jenkins:jenkins /var/lib/jenkins'
+
                     // Use ssh-agent to run the SSH command
                     sshagent(credentials: [SSH_KEY]) {
                         // Extract branch name from environment variable
@@ -49,9 +52,13 @@ pipeline {
                         // Dynamic deployment location based on branch name
                         def dynamicDeploymentLocation = "${DEPLOYMENT_LOCATION}/${branchName}"
 
+                        // Adjust permissions for the deployment location
+                        sh "sudo mkdir -p ${DEPLOYMENT_LOCATION}"
+                        sh "sudo chown -R jenkins:jenkins ${DEPLOYMENT_LOCATION}"
+
                         // Deploy to the dynamic location
                         sh """
-                            ssh -i /var/lib/jenkins/.ssh/id_rsa ubuntu@13.232.231.36 'mkdir -p ${dynamicDeploymentLocation}/dev && cd ${dynamicDeploymentLocation}/dev && git clone https://github.com/s-racing/nodejs.git .'
+                            sudo mkdir -p ${dynamicDeploymentLocation}/dev && cd ${dynamicDeploymentLocation}/dev && git clone https://github.com/s-racing/nodejs.git .
                         """
                     }
                 }
