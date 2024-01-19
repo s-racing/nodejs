@@ -37,14 +37,7 @@ pipeline {
             steps {
                 script {
                     // Write the SSH private key to a temporary file
-                    def sshKeyFile = writeMavenPom model: {
-                        repositories {
-                            repository {
-                                id "temp-repo"
-                                url "file://${env.WORKSPACE}"
-                            }
-                        }
-                    }, nextBuildNumber: true
+                    def sshKeyFile = "${env.WORKSPACE}/temp_ssh_key"
                     writeFile file: sshKeyFile, text: env.SSH_PRIVATE_KEY
                     sh "chmod 600 ${sshKeyFile}"
 
