@@ -2,32 +2,28 @@ pipeline {
     agent any
 
     environment {
-        SSH_USER = 'ubuntu'
-        SSH_KEY = credentials('e06285f3-0d2d-434a-91a4-05aecbcbf5a7') // Replace with your actual credentials ID
-        TARGET_SERVER_IP = '13.232.231.36'
-        REMOTE_HOME_DIR = '/home/ubuntu'
-        FILE_CONTENT = 'Hello, this is the content of the text file.'
-        FILE_NAME = 'example.txt'
+        SSH_KEY = credentials('e06285f3-0d2d-434a-91a4-05aecbcbf5a7')
     }
 
     stages {
-        stage('Create Text File on Ubuntu Server') {
+        stage('Deploy to Target Server') {
             steps {
                 script {
-                    // Set up SSH key
+                    // Copy SSH key to Jenkins user's home directory
+                    sh "sudo cp /root/.ssh/id_rsa /var/lib/jenkins/.ssh/"
+                    sh "sudo chown jenkins:jenkins /var/lib/jenkins/.ssh/id_rsa"
+
+                    // Use ssh-agent to run the SSH command
                     sshagent(credentials: [SSH_KEY]) {
-                        // Create a text file on the Ubuntu server
-                        sh "echo '${FILE_CONTENT}' | ssh -i ${SSH_KEY} ${SSH_USER}@${TARGET_SERVER_IP} 'cat > ${REMOTE_HOME_DIR}/${FILE_NAME}'"
+                        // Run the command as the jenkins user
+                        sh '''
+                            sudo -u jenkins ssh -i /var/lib/jenkins/.ssh/id_rsa ubuntu@13.232.231.36 cat > /home/ubuntu/example.txt << EOF
+                            Hello, this is the content of the text file.
+                            EOF
+                        '''
                     }
                 }
             }
-        }
-    }
-
-    post {
-        always {
-            // Clean up: Remove SSH key from agent
-            sshagent(['']) // Passing an empty list of credentials to stop the agent
         }
     }
 }
