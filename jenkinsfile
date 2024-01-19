@@ -21,7 +21,7 @@ pipeline {
                     // Use ssh-agent to run the SSH command
                     sshagent(credentials: [SSH_KEY]) {
                         // Run the command as the jenkins user without sudo
-                        sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ${TARGET_SERVER} 'mkdir -p ${BASE_TARGET_DIR}/dev'"
+                        sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ${TARGET_SERVER} 'mkdir -p ${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}'"
                     }
                 }
             }
@@ -48,12 +48,8 @@ pipeline {
                     // Assuming your Node.js project is in the current workspace
                     def workspace = pwd()
 
-                    // Determine the target directory based on the branch name
-                    def branchName = env.BRANCH_NAME.toLowerCase()
-                    def targetDir = "${BASE_TARGET_DIR}/${branchName}"
-
                     // Use rsync to copy the project to the target server
-                    sh "rsync -r -e 'ssh -i /var/lib/jenkins/.ssh/id_rsa' ${workspace}/ ${TARGET_SERVER}:${targetDir}/"
+                    sh "rsync -r -e 'ssh -i /var/lib/jenkins/.ssh/id_rsa' ${workspace}/ ${TARGET_SERVER}:${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/"
                 }
             }
         }
