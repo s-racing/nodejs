@@ -3,10 +3,19 @@ pipeline {
 
     environment {
         SSH_KEY = credentials('e06285f3-0d2d-434a-91a4-05aecbcbf5a7')
-        REMOTE_SERVER = 'ubuntu@13.232.231.36'
+        DEPLOYMENT_LOCATION = "/var/www/html"
     }
 
     stages {
+        stage('Declarative: Checkout SCM') {
+            steps {
+                script {
+                    // Your existing checkout code
+                    checkout scm
+                }
+            }
+        }
+
         stage('Install Node.js and npm') {
             steps {
                 script {
@@ -34,16 +43,16 @@ pipeline {
 
                     // Use ssh-agent to run the SSH command
                     sshagent(credentials: [SSH_KEY]) {
-                        // Run the command as the jenkins user without sudo
+                        // Extract branch name from environment variable
+                        def branchName = env.BRANCH_NAME
 
-                        // Create a 'dev' directory on the target server
-                        sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ${REMOTE_SERVER} 'mkdir -p /home/ubuntu/dev'"
+                        // Dynamic deployment location based on branch name
+                        def dynamicDeploymentLocation = "${DEPLOYMENT_LOCATION}/${branchName}"
 
-                        // Copy the project files to the 'dev' directory on the target server
-                        sh "scp -i /var/lib/jenkins/.ssh/id_rsa -r /path/to/your/project/* ${REMOTE_SERVER}:/home/ubuntu/dev/"
-
-                        // Change ownership of the files in the 'dev' directory
-                        sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ${REMOTE_SERVER} 'chown -R ubuntu:ubuntu /home/ubuntu/dev'"
+                        // Deploy to the dynamic location
+                        sh """
+                            ssh -i /var/lib/jenkins/.ssh/id_rsa ubuntu@13.232.231.36 'mkdir -p ${dynamicDeploymentLocation}/dev && cd ${dynamicDeploymentLocation}/dev && git clone https://github.com/s-racing/nodejs.git .'
+                        """
                     }
                 }
             }
