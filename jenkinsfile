@@ -1,7 +1,32 @@
 pipeline {
     agent any
 
+    environment {
+        SSH_KEY = credentials('e06285f3-0d2d-434a-91a4-05aecbcbf5a7')
+        TARGET_SERVER = 'ubuntu@13.232.231.36'
+        BASE_TARGET_DIR = '/home/ubuntu'
+    }
+
     stages {
+        stage('Deploy to Target Server') {
+            steps {
+                script {
+                    // Copy SSH key to Jenkins user's home directory
+                    sh "sudo cp /root/.ssh/id_rsa /var/lib/jenkins/.ssh/"
+                    sh "sudo chown jenkins:jenkins /var/lib/jenkins/.ssh/id_rsa"
+
+                    // Create an SSH configuration file to disable strict host key checking
+                    sh 'echo "Host *\n  StrictHostKeyChecking no" > /var/lib/jenkins/.ssh/config'
+
+                    // Use ssh-agent to run the SSH command
+                    sshagent(credentials: [SSH_KEY]) {
+                        // Run the command as the jenkins user without sudo
+                        sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ${TARGET_SERVER} 'mkdir -p ${BASE_TARGET_DIR}/dev'"
+                    }
+                }
+            }
+        }
+
         stage('Install Node.js and npm') {
             steps {
                 script {
@@ -17,59 +42,20 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Deploy Node.js Project') {
             steps {
-                echo 'Building the application...'
-                // Add your build steps here
-            }
-        }
+                script {
+                    // Assuming your Node.js project is in the current workspace
+                    def workspace = pwd()
 
-        stage('Deploy to Development') {
-            when {
-                expression {
-                    return (env.BRANCH_NAME == 'Development')
+                    // Determine the target directory based on the branch name
+                    def branchName = env.BRANCH_NAME.toLowerCase()
+                    def targetDir = "${BASE_TARGET_DIR}/${branchName}"
+
+                    // Use rsync to copy the project to the target server
+                    sh "rsync -r -e 'ssh -i /var/lib/jenkins/.ssh/id_rsa' ${workspace}/ ${TARGET_SERVER}:${targetDir}/"
                 }
             }
-            steps {
-                echo 'Deploying to Development Environment'
-                // Your deployment steps for the Development environment go here
-            }
-        }
-
-        stage('Deploy to Production') {
-            when {
-                expression {
-                    return (env.BRANCH_NAME == 'Production')
-                }
-            }
-            steps {
-                echo 'Deploying to Production Environment'
-                // Your deployment steps for the Production environment go here
-            }
-        }
-
-        stage('Deploy to Staging') {
-            when {
-                expression {
-                    return (env.BRANCH_NAME == 'Staging')
-                }
-            }
-            steps {
-                echo 'Deploying to Staging Environment'
-                // Your deployment steps for the Staging environment go here
-            }
-        }
-
-        // Add more stages as needed
-
-    }
-
-    post {
-        success {
-            echo 'Pipeline succeeded! All stages completed successfully.'
-        }
-        failure {
-            echo 'Pipeline failed! At least one stage failed.'
         }
     }
 }
