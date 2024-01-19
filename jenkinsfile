@@ -51,7 +51,7 @@ pipeline {
 
                         // Deploy to the dynamic location
                         sh """
-                            ssh -i /var/lib/jenkins/.ssh/id_rsa ubuntu@13.232.231.36 'mkdir -p ${dynamicDeploymentLocation} && cd ${dynamicDeploymentLocation} && git clone https://github.com/s-racing/nodejs.git .'
+                            ssh -i /var/lib/jenkins/.ssh/id_rsa ubuntu@13.232.231.36 'mkdir -p ${dynamicDeploymentLocation}/dev && cd ${dynamicDeploymentLocation}/dev && git clone https://github.com/s-racing/nodejs.git .'
                         """
                     }
                 }
