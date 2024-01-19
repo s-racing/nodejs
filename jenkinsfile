@@ -13,6 +13,9 @@ pipeline {
                     sh "sudo cp /root/.ssh/id_rsa /var/lib/jenkins/.ssh/"
                     sh "sudo chown jenkins:jenkins /var/lib/jenkins/.ssh/id_rsa"
 
+                    // Disable strict host key checking
+                    sh 'echo -e "Host *\n  StrictHostKeyChecking no" > /var/lib/jenkins/.ssh/config'
+
                     // Use ssh-agent to run the SSH command
                     sshagent(credentials: [SSH_KEY]) {
                         // Run the command as the jenkins user without sudo
