@@ -3,55 +3,55 @@ pipeline {
 
     environment {
         SSH_KEY = credentials('e06285f3-0d2d-434a-91a4-05aecbcbf5a7')
-        TARGET_SERVER = 'ubuntu@13.232.231.36'
-        TARGET_DIR = '/home/ubuntu/dev'
     }
 
     stages {
-        stage('Deploy to Target Server') {
+        stage('Deploy to Target Server - Development') {
+            when {
+                branch 'Development'
+            }
             steps {
                 script {
-                    // Copy SSH key to Jenkins user's home directory
-                    sh "sudo cp /root/.ssh/id_rsa /var/lib/jenkins/.ssh/"
-                    sh "sudo chown jenkins:jenkins /var/lib/jenkins/.ssh/id_rsa"
-
-                    // Create an SSH configuration file to disable strict host key checking
-                    sh 'echo "Host *\n  StrictHostKeyChecking no" > /var/lib/jenkins/.ssh/config'
-
-                    // Use ssh-agent to run the SSH command
-                    sshagent(credentials: [SSH_KEY]) {
-                        // Run the command as the jenkins user without sudo
-                        sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ${TARGET_SERVER} 'mkdir -p ${TARGET_DIR}'"
-                    }
+                    deployToServer('Development')
                 }
             }
         }
 
-        stage('Install Node.js and npm') {
+        stage('Deploy to Target Server - Production') {
+            when {
+                branch 'Production'
+            }
             steps {
                 script {
-                    // Install Node.js using the NodeJS Jenkins plugin
-                    // 'nodejs' should match the tool name you configured in Jenkins
-                    def nodejsInstallation = tool name: 'nodejs', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
-                    def nodejsHome = "${nodejsInstallation}/bin"
-                    env.PATH = "${nodejsHome}:${env.PATH}"
-
-                    // Install npm version 8 globally
-                    sh 'npm install -g npm@8'
+                    deployToServer('Production')
                 }
             }
         }
 
-        stage('Deploy Node.js Project') {
+        stage('Deploy to Target Server - Staging') {
+            when {
+                branch 'Staging'
+            }
             steps {
                 script {
-                    // Assuming your Node.js project is in the current workspace
-                    def workspace = pwd()
-
-                    // Use rsync to copy the project to the target server
-                    sh "rsync -r -e 'ssh -i /var/lib/jenkins/.ssh/id_rsa' ${workspace}/ ${TARGET_SERVER}:${TARGET_DIR}/"
+                    deployToServer('Staging')
                 }
             }
         }
+    }
+}
+
+def deployToServer(branchName) {
+    // Copy SSH key to Jenkins user's home directory
+    sh "sudo cp /root/.ssh/id_rsa /var/lib/jenkins/.ssh/"
+    sh "sudo chown jenkins:jenkins /var/lib/jenkins/.ssh/id_rsa"
+
+    // Create an SSH configuration file to disable strict host key checking
+    sh 'echo "Host *\n  StrictHostKeyChecking no" > /var/lib/jenkins/.ssh/config'
+
+    // Use ssh-agent to run the SSH command
+    sshagent(credentials: [SSH_KEY]) {
+        // Run the command as the jenkins user without sudo
+        sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ubuntu@13.232.231.36 'mkdir -p /var/www/html/${branchName} && cd /var/www/html/${branchName} && git clone https://github.com/s-racing/nodejs.git . && npm install && npm run build'"
     }
 }
