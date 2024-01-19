@@ -2,18 +2,26 @@ pipeline {
     agent any
 
     stages {
-        // Previous stages remain unchanged
-
         stage('Deploy to SSH host') {
-            when {
-                expression {
-                    return (env.BRANCH_NAME == 'Development' || env.BRANCH_NAME == 'Production' || env.BRANCH_NAME == 'Staging')
-                }
-            }
             steps {
                 script {
-                    // Assuming you have already set up passwordless SSH access
-                    sh "ssh ubuntu@13.232.231.36 'mkdir -p /home/ubuntu/newnd_${env.BRANCH_NAME} && scp -r /var/lib/jenkins/workspace/newnd_${env.BRANCH_NAME}/* /home/ubuntu/newnd_${env.BRANCH_NAME}/'"
+                    echo 'Known Hosts Content:'
+                    
+                    // Fixing Permissions and Ownership
+                    sh "echo ubuntu ALL=(ALL) NOPASSWD: /bin/chown >> /etc/sudoers.d/jenkins-chown"
+                    sh "sudo chmod 440 /etc/sudoers.d/jenkins-chown"
+                    sh "sudo chown root:root /etc/sudoers.d/jenkins-chown"
+
+                    sh "sudo chown ubuntu:ubuntu /home/ubuntu/.ssh/known_hosts"
+                    sh "chmod 644 /home/ubuntu/.ssh/known_hosts"
+                    sh "cat /home/ubuntu/.ssh/known_hosts"
+
+                    // Use 'sudo' to run the chown command
+                    sh "sudo mkdir -p /home/test"
+                    sh "sudo chown ubuntu:ubuntu /home/test"
+                    
+                    // Create a test.txt file in /home
+                    sh "echo 'Hello, this is a test file' | sudo tee /home/test/test.txt"
                 }
             }
         }
