@@ -3,34 +3,9 @@ pipeline {
 
     environment {
         SSH_KEY = credentials('e06285f3-0d2d-434a-91a4-05aecbcbf5a7')
-        DEPLOYMENT_LOCATION = "/var/www/html"
     }
 
     stages {
-        stage('Declarative: Checkout SCM') {
-            steps {
-                script {
-                    // Your existing checkout code
-                    checkout scm
-                }
-            }
-        }
-
-        stage('Install Node.js and npm') {
-            steps {
-                script {
-                    // Install Node.js using the NodeJS Jenkins plugin
-                    // 'nodejs' should match the tool name you configured in Jenkins
-                    def nodejsInstallation = tool name: 'nodejs', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
-                    def nodejsHome = "${nodejsInstallation}/bin"
-                    env.PATH = "${nodejsHome}:${env.PATH}"
-
-                    // Install npm version 8 globally
-                    sh 'npm install -g npm@8'
-                }
-            }
-        }
-
         stage('Deploy to Target Server') {
             steps {
                 script {
@@ -43,21 +18,8 @@ pipeline {
 
                     // Use ssh-agent to run the SSH command
                     sshagent(credentials: [SSH_KEY]) {
-                        // Extract branch name from environment variable
-                        def branchName = env.BRANCH_NAME
-
-                        // Dynamic deployment location based on branch name
-                        def dynamicDeploymentLocation = "${DEPLOYMENT_LOCATION}/${branchName}"
-
-                        // Deploy to the dynamic location
-                        sh """
-                            sudo mkdir -p ${dynamicDeploymentLocation}
-                            cd ${dynamicDeploymentLocation}
-                            git clone https://github.com/s-racing/nodejs.git .
-                            cat > example.txt << EOF
-                            Hello, this is the content of the text file.
-                            EOF
-                        """
+                        // Run the command as the jenkins user without sudo
+                        sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ubuntu@13.232.231.36 'cat > /home/ubuntu/example.txt' << EOF\nHello, >
                     }
                 }
             }
