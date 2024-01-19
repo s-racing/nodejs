@@ -3,15 +3,26 @@ pipeline {
 
     environment {
         SSH_KEY = credentials('e06285f3-0d2d-434a-91a4-05aecbcbf5a7')
-        DEPLOYMENT_LOCATION = "/var/www/html"
+        TARGET_SERVER = 'ubuntu@13.232.231.36'
+        TARGET_DIR = '/home/ubuntu/dev'
     }
 
     stages {
-        stage('Declarative: Checkout SCM') {
+        stage('Deploy to Target Server') {
             steps {
                 script {
-                    // Your existing checkout code
-                    checkout scm
+                    // Copy SSH key to Jenkins user's home directory
+                    sh "sudo cp /root/.ssh/id_rsa /var/lib/jenkins/.ssh/"
+                    sh "sudo chown jenkins:jenkins /var/lib/jenkins/.ssh/id_rsa"
+
+                    // Create an SSH configuration file to disable strict host key checking
+                    sh 'echo "Host *\n  StrictHostKeyChecking no" > /var/lib/jenkins/.ssh/config'
+
+                    // Use ssh-agent to run the SSH command
+                    sshagent(credentials: [SSH_KEY]) {
+                        // Run the command as the jenkins user without sudo
+                        sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ${TARGET_SERVER} 'mkdir -p ${TARGET_DIR}'"
+                    }
                 }
             }
         }
@@ -31,36 +42,14 @@ pipeline {
             }
         }
 
-        stage('Deploy to Target Server') {
+        stage('Deploy Node.js Project') {
             steps {
                 script {
-                    // Copy SSH key to Jenkins user's home directory
-                    sh "sudo cp /root/.ssh/id_rsa /var/lib/jenkins/.ssh/"
-                    sh "sudo chown jenkins:jenkins /var/lib/jenkins/.ssh/id_rsa"
+                    // Assuming your Node.js project is in the current workspace
+                    def workspace = pwd()
 
-                    // Create an SSH configuration file to disable strict host key checking
-                    sh 'echo "Host *\n  StrictHostKeyChecking no" > /var/lib/jenkins/.ssh/config'
-
-                    // Make Jenkins user the owner of the Jenkins home directory
-                    sh 'sudo chown -R jenkins:jenkins /var/lib/jenkins'
-
-                    // Use ssh-agent to run the SSH command
-                    sshagent(credentials: [SSH_KEY]) {
-                        // Extract branch name from environment variable
-                        def branchName = env.BRANCH_NAME
-
-                        // Dynamic deployment location based on branch name
-                        def dynamicDeploymentLocation = "${DEPLOYMENT_LOCATION}/${branchName}"
-
-                        // Adjust permissions for the deployment location
-                        sh "sudo mkdir -p ${DEPLOYMENT_LOCATION}"
-                        sh "sudo chown -R jenkins:jenkins ${DEPLOYMENT_LOCATION}"
-
-                        // Deploy to the dynamic location
-                        sh """
-                            sudo mkdir -p ${dynamicDeploymentLocation}/dev && cd ${dynamicDeploymentLocation}/dev && git clone https://github.com/s-racing/nodejs.git .
-                        """
-                    }
+                    // Use rsync to copy the project to the target server
+                    sh "rsync -r -e 'ssh -i /var/lib/jenkins/.ssh/id_rsa' ${workspace}/ ${TARGET_SERVER}:${TARGET_DIR}/"
                 }
             }
         }
