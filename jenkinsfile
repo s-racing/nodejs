@@ -17,7 +17,7 @@ pipeline {
                     sshagent(credentials: [SSH_KEY]) {
                         // Run the command as the jenkins user without sudo
                         sh '''
-                            sudo -u jenkins sh -c "ssh -i /var/lib/jenkins/.ssh/id_rsa ubuntu@13.232.231.36 cat > /home/ubuntu/example.txt << EOF
+                            sudo -u jenkins sh -c "ssh -i /var/lib/jenkins/.ssh/id_rsa ubuntu@13.232.231.36 'cat > /home/ubuntu/example.txt' << EOF
                             Hello, this is the content of the text file.
                             EOF"
                         '''
