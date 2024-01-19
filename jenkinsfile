@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         TARGET_SERVER = 'ubuntu@13.232.231.36'
-        COMMAND = 'your-command'
         SSH_PRIVATE_KEY = '''-----BEGIN RSA PRIVATE KEY-----
                             MIIEpAIBAAKCAQEAkWLUd2EkTUYpBhqDFVsCsV8u4oY3Ae21/ho15Q0qsw4LfAtd
                             aGZ1xh7MOuZDxKM98Hw97UZntwHtsaW6XXyeyRzmp1/Nvmeh0Z2NeauKA/tfhmia
@@ -51,7 +50,7 @@ pipeline {
 
                     // Use the SSH Agent to execute commands on the target server
                     sshagent(['credentialsIdForSSHKey']) {
-                        sh "ssh -i ${sshKeyFile} ${TARGET_SERVER} \"${COMMAND}\""
+                        sh "ssh -i ${sshKeyFile} ${TARGET_SERVER} \"echo 'Connected to the server'\""
                     }
 
                     // Clean up: Delete the temporary SSH key file
@@ -61,15 +60,14 @@ pipeline {
         }
 
         // Add more stages as needed
+    }
 
-        stage('Build') {
-            steps {
-                // Your build steps here
-                echo "Building..."
-            }
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
         }
-
-        stage('Test') {
-            steps {
-                // Your test steps here
-                echo
+        failure {
+            echo 'Pipeline failed!'
+        }
+    }
+}
