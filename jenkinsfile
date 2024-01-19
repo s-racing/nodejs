@@ -52,6 +52,6 @@ def deployToServer(branchName) {
     // Use ssh-agent to run the SSH command
     sshagent(credentials: [SSH_KEY]) {
         // Run the command as the jenkins user without sudo
-        sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ubuntu@13.232.231.36 'mkdir -p /var/www/html/${branchName} && cd /var/www/html/${branchName} && git clone https://github.com/s-racing/nodejs.git . && npm install && npm run build'"
+        sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ubuntu@13.232.231.36 'mkdir -p /home/ubuntu/${branchName} && cd /home/ubuntu/${branchName} && git clone https://github.com/s-racing/nodejs.git . && npm install && npm run build'"
     }
 }
