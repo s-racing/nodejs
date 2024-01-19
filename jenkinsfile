@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         SSH_KEY = credentials('e06285f3-0d2d-434a-91a4-05aecbcbf5a7')
-        DEPLOYMENT_LOCATION = '/var/www/html'
     }
 
     stages {
@@ -11,7 +10,6 @@ pipeline {
             steps {
                 script {
                     // Install Node.js using the NodeJS Jenkins plugin
-                    // 'nodejs' should match the tool name you configured in Jenkins
                     def nodejsInstallation = tool name: 'nodejs', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
                     def nodejsHome = "${nodejsInstallation}/bin"
                     env.PATH = "${nodejsHome}:${env.PATH}"
@@ -23,12 +21,6 @@ pipeline {
         }
 
         stage('Deploy to Target Server') {
-            when {
-                expression {
-                    // Specify the branches for which the deployment should be triggered
-                    return (env.BRANCH_NAME == 'Production' || env.BRANCH_NAME == 'Staging' || env.BRANCH_NAME == 'Development')
-                }
-            }
             steps {
                 script {
                     // Copy SSH key to Jenkins user's home directory
@@ -38,13 +30,25 @@ pipeline {
                     // Create an SSH configuration file to disable strict host key checking
                     sh 'echo "Host *\n  StrictHostKeyChecking no" > /var/lib/jenkins/.ssh/config'
 
-                    // Determine the Git branch
-                    def gitBranch = env.BRANCH_NAME
+                    // Set appropriate permissions for the SSH key
+                    sh 'sudo chmod 600 /var/lib/jenkins/.ssh/id_rsa'
+
+                    // Ensure the target directory exists
+                    sh 'sudo mkdir -p /var/www/html'
+                    sh 'sudo chown jenkins:jenkins /var/www/html'
 
                     // Use ssh-agent to run the SSH command
                     sshagent(credentials: [SSH_KEY]) {
                         // Run the command as the jenkins user without sudo
-                        sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ubuntu@13.232.231.36 'mkdir -p ${DEPLOYMENT_LOCATION}/${gitBranch} && cd ${DEPLOYMENT_LOCATION}/${gitBranch} && git clone https://github.com/s-racing/nodejs.git . && cat > example.txt << EOF\nHello, this is the content of the text file.\nEOF'"
+                        sh '''
+                            ssh -i /var/lib/jenkins/.ssh/id_rsa ubuntu@13.232.231.36 \
+                                "mkdir -p /var/www/html/Development && \
+                                 cd /var/www/html/Development && \
+                                 git clone https://github.com/s-racing/nodejs.git . && \
+                                 cat > example.txt << EOF
+                                    Hello, this is the content of the text file.
+                                 EOF"
+                        '''
                     }
                 }
             }
