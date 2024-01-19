@@ -2,65 +2,32 @@ pipeline {
     agent any
 
     environment {
-        TARGET_SERVER = 'ubuntu@13.232.231.36'
-        SSH_PRIVATE_KEY = '''-----BEGIN RSA PRIVATE KEY-----
-                            MIIEpAIBAAKCAQEAkWLUd2EkTUYpBhqDFVsCsV8u4oY3Ae21/ho15Q0qsw4LfAtd
-                            aGZ1xh7MOuZDxKM98Hw97UZntwHtsaW6XXyeyRzmp1/Nvmeh0Z2NeauKA/tfhmia
-                            PaZxFvVJGao11S3Q1rQTY8fApybFFy1bguG06GzCsINTgZqfopvDuIiDautZCxBa
-                            zv1fKhvn/6lFttcygwEIkgek2eIVnK0JeywfWFBFFoa3+Y8CmoyVrprjipYFP9am
-                            hat1kT+2vkGsMyrUE0cM54wkuiu9dxr0q89DJaYQ23GHhDvyqC5MLvGNS+de7mQS
-                            TUuvDT8ry9mz/4V9qAn0FbkXE8ZPfMhRHalUWwIDAQABAoIBAG06iVJfo3yDF9NE
-                            G/PxeqZ0Uq9SEwXZ6H/OhWtfZxM7nBlIGJeVUyrUfLBLy+JymtiRH52i5c0zH7f2
-                            QXx3YnzKv+hELDm/dm4cJuygmoK/W1eKQ0fKQvDyvEcSAHv3fg2xIVg3/WAX2r+9
-                            DiHZHaf5/pPLNvQKjaEH0hZUShgLM+gz4k7s6e3Hcj5BhihoYr8N515BPlJw5OCR
-                            3mmLg+4V7rUJQZjJHrmT6Jv5Td7UZHrccu9U1kuwqWWyK9BuqJ3XKK4sXVoxxuAR
-                            5eOPlHp6M0AEqvJeajAkwDvE/7VXjJSNx+cw6fvcs+qQpWF34IYtyE6TR8fLMa+h
-                            sLfd1vECgYEAwgZXMkMQPUwQ0fVeNpfV+Jr9+KuY6ZFSm3E6y5VKETnIwsfjCV3c
-                            9o5t8mBmlB8qKzDaq3qARxC49Fj7WApAOLSxluyANakcUEOWFkHi2C+ZCOOh7opv
-                            OeAwe1hIQzkFdCQOtc+okgjo34ohKmLgsmlv2Oz+2eHvr4t79adTslcCgYEAv9M8
-                            74G6vKJ2my8NkhxsUxAoNrItUnqXci0TLyqYtQGkoYoGdtnyinqO/hBgHqu+sIqT
-                            YiqavQf7ef/kULb9Abq8e86pFqPsI5Sy+dEJmysMY0lIjC4mH/5ZjJSKmISf9cVH
-                            JOqRO3WqnshmIUM7KpEqDLQPDBET/8/sI21bk50CgYEAvkkdp0uiV5uMO34bIguT
-                            bDgFsKYKV7eQfqZz9Um61F4JiQ4kmgEWPjC9n6HvuIFACA/nxZlkyU2bNvk1t8iF
-                            55c/PDdCHl52SDmgrr97TG6R9efZ3mqiXu6CXdXdOSBpOthKHQFF38MhMGr1z+4d
-                            VJyXdvYnk2REf7OapPev3A0CgYEAsh49eM/nS3030MUSPtfxpfdcv90WxH1c3wIH
-                            zEYrYffSnMUDV5zs37UJzdP6zMAA4wDp9b9Fy7z7v77ijCg+KjrxBa1RyNoRTMCo
-                            p9t4pgKFEDReDvxTHmYZVLYhM5oCxj2W4CqHDMUn1ySR4NUCvXXpq74OMtAw19qD
-                            lCnZXOkCgYA0TXEwtbrENxyrwisy0i3Po9Q3xdhKiz5RxKcVs+r4QgwpCWA766i/
-                            G0aMTq6LszkqGw0LKDk+ifqqCRsqIVJF3iRfK9lHWbXF7svZsQj9Toki+bFgMaOX
-                            94ebtRiUE6dg3521/AXLKSrKAROs6KMGazgyTUHSMBRFOou0GNK4fg==
-                            -----END RSA PRIVATE KEY-----'''
+        SSH_USER = 'ubuntu'
+        SSH_KEY = credentials('e06285f3-0d2d-434a-91a4-05aecbcbf5a7') // Replace with your actual credentials ID
+        TARGET_SERVER_IP = '13.232.231.36'
+        REMOTE_HOME_DIR = '/home/ubuntu'
+        FILE_CONTENT = 'Hello, this is the content of the text file.'
+        FILE_NAME = 'example.txt'
     }
 
     stages {
-        stage('Connect to Server') {
+        stage('Create Text File on Ubuntu Server') {
             steps {
                 script {
-                    // Write the SSH private key to a temporary file
-                    def sshKeyFile = "${env.WORKSPACE}/temp_ssh_key"
-                    writeFile file: sshKeyFile, text: env.SSH_PRIVATE_KEY
-                    sh "chmod 600 ${sshKeyFile}"
-
-                    // Use the SSH Agent to execute commands on the target server
-                    sshagent(['credentialsIdForSSHKey']) {
-                        sh "ssh -i ${sshKeyFile} ${TARGET_SERVER} \"echo 'Connected to the server'\""
+                    // Set up SSH key
+                    sshagent(credentials: [SSH_KEY]) {
+                        // Create a text file on the Ubuntu server
+                        sh "echo '${FILE_CONTENT}' | ssh -i ${SSH_KEY} ${SSH_USER}@${TARGET_SERVER_IP} 'cat > ${REMOTE_HOME_DIR}/${FILE_NAME}'"
                     }
-
-                    // Clean up: Delete the temporary SSH key file
-                    sh "rm -f ${sshKeyFile}"
                 }
             }
         }
-
-        // Add more stages as needed
     }
 
     post {
-        success {
-            echo 'Pipeline completed successfully!'
-        }
-        failure {
-            echo 'Pipeline failed!'
+        always {
+            // Clean up: Remove SSH key from agent
+            sshagent(['']) // Passing an empty list of credentials to stop the agent
         }
     }
 }
