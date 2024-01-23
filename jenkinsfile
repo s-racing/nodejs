@@ -26,8 +26,8 @@ pipeline {
 
                     // Install Node.js version
                     echo "Installing Node.js version ${NODE_VERSION}..."
-                    sh "nvm install ${NODE_VERSION}"
-                    sh "nvm use ${NODE_VERSION}"
+                    sh "nvm install ${NODE_VERSION}" || error("Failed to install Node.js")
+                    sh "nvm use ${NODE_VERSION}" || error("Failed to use Node.js version")
                 }
             }
         }
@@ -58,8 +58,8 @@ pipeline {
                     def workspace = pwd()
 
                     // Build the Node.js project
-                    sh "npm install"
-                    sh "npm run build" // Adjust this line based on your build command
+                    sh "npm install" || error("Failed to install npm packages")
+                    sh "npm run build" || error("Failed to build Node.js project")
 
                     // Create the 'dist' directory if it doesn't exist
                     sh "mkdir -p ${workspace}/dist"
@@ -79,4 +79,17 @@ pipeline {
             }
         }
     }
+
+    post {
+        always {
+            // Clean up
+            deleteDir()
+        }
+    }
+}
+
+def error(message) {
+    echo "Error: ${message}"
+    currentBuild.result = 'FAILURE'
+    error("${message}")
 }
