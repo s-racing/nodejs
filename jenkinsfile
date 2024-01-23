@@ -8,22 +8,6 @@ pipeline {
     }
 
     stages {
-        stage('Build Node.js Project') {
-            steps {
-                script {
-                    // Assuming your Node.js project is in the current workspace
-                    def workspace = pwd()
-
-                    // Change to the project directory
-                    dir(workspace) {
-                        // Install project dependencies and build
-                        sh 'npm install'
-                        sh 'npm run build'
-                    }
-                }
-            }
-        }
-
         stage('Deploy to Target Server') {
             steps {
                 script {
@@ -34,31 +18,42 @@ pipeline {
                     // Create an SSH configuration file to disable strict host key checking
                     sh 'echo "Host *\n  StrictHostKeyChecking no" > /var/lib/jenkins/.ssh/config'
 
-                    // Create 'dist' directory if it doesn't exist
-                    sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ${TARGET_SERVER} 'mkdir -p ${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/dist'"
-
-                    // Use rsync to copy the 'dist' directory to the target server
-                    sh "rsync -r -e 'ssh -i /var/lib/jenkins/.ssh/id_rsa' ${workspace}/dist/ ${TARGET_SERVER}:${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/"
-
-                    // Run npm i -f in the target directory
-                    sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ${TARGET_SERVER} 'cd ${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/dist/ && npm i -f'"
+                    // Use ssh-agent to run the SSH command
+                    sshagent(credentials: [SSH_KEY]) {
+                        // Run the command as the jenkins user without sudo
+                        sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ${TARGET_SERVER} 'mkdir -p ${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}'"
+                    }
                 }
             }
         }
 
-        stage('Install Node.js and npm') {
+        stage('Build Node.js Project') {
             steps {
                 script {
-                    // Install Node.js using the NodeJS Jenkins plugin
-                    // 'nodejs' should match the tool name you configured in Jenkins
-                    def nodejsInstallation = tool name: 'nodejs', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
-                    def nodejsHome = "${nodejsInstallation}/bin"
-                    env.PATH = "${nodejsHome}:${env.PATH}"
+                    // Assuming your Node.js project is in the current workspace
+                    def workspace = pwd()
 
-                    // Install npm version 8 globally
-                    sh 'npm install -g npm@8'
+                    // Build the Node.js project
+                    sh "npm install"
+                    sh "npm run build" // Adjust this line based on your build command
+
+                    // Create the 'dist' directory if it doesn't exist
+                    sh "mkdir -p ${workspace}/dist"
+                }
+            }
+        }
+
+        stage('Deploy Node.js Project') {
+            steps {
+                script {
+                    // Assuming your Node.js project is in the current workspace
+                    def workspace = pwd()
+
+                    // Use rsync to copy only the necessary files to the target server
+                    sh "rsync -r -e 'ssh -i /var/lib/jenkins/.ssh/id_rsa' ${workspace}/dist/ ${TARGET_SERVER}:${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/"
                 }
             }
         }
     }
 }
+
