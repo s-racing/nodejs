@@ -5,33 +5,9 @@ pipeline {
         SSH_KEY = credentials('e8874ee0-5c49-426f-b66a-ecaf072bab9e')
         TARGET_SERVER = 'ubuntu@15.207.71.31'
         BASE_TARGET_DIR = '/home/ubuntu'
-        NVM_DIR = '/root/.nvm'
-        NODE_VERSION = '16.20.1'
-    }
-
-    tools {
-        nodejs 'nodejs'
-        git 'git'
     }
 
     stages {
-        stage('Set Up Node.js') {
-            steps {
-                script {
-                    // Set up nvm
-                    echo 'Setting up nvm...'
-                    sh "export NVM_DIR=${NVM_DIR}"
-                    sh "[ -s '${NVM_DIR}/nvm.sh' ] && . '${NVM_DIR}/nvm.sh'"
-                    sh "[ -s '${NVM_DIR}/bash_completion' ] && . '${NVM_DIR}/bash_completion'"
-
-                    // Install Node.js version
-                    echo "Installing Node.js version ${NODE_VERSION}..."
-                    sh "nvm install ${NODE_VERSION}" || error("Failed to install Node.js")
-                    sh "nvm use ${NODE_VERSION}" || error("Failed to use Node.js version")
-                }
-            }
-        }
-
         stage('Deploy to Target Server') {
             steps {
                 script {
@@ -51,18 +27,17 @@ pipeline {
             }
         }
 
-        stage('Build Node.js Project') {
+        stage('Install Node.js and npm') {
             steps {
                 script {
-                    // Assuming your Node.js project is in the current workspace
-                    def workspace = pwd()
+                    // Install Node.js using the NodeJS Jenkins plugin
+                    // 'nodejs' should match the tool name you configured in Jenkins
+                    def nodejsInstallation = tool name: 'nodejs', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
+                    def nodejsHome = "${nodejsInstallation}/bin"
+                    env.PATH = "${nodejsHome}:${env.PATH}"
 
-                    // Build the Node.js project
-                    sh "npm install" || error("Failed to install npm packages")
-                    sh "npm run build" || error("Failed to build Node.js project")
-
-                    // Create the 'dist' directory if it doesn't exist
-                    sh "mkdir -p ${workspace}/dist"
+                    // Install npm version 8 globally
+                    sh 'npm install -g npm@8'
                 }
             }
         }
@@ -73,23 +48,10 @@ pipeline {
                     // Assuming your Node.js project is in the current workspace
                     def workspace = pwd()
 
-                    // Use rsync to copy only the necessary files to the target server
-                    sh "rsync -r -e 'ssh -i /var/lib/jenkins/.ssh/id_rsa' ${workspace}/dist/ ${TARGET_SERVER}:${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/"
+                    // Use rsync to copy the project to the target server
+                    sh "rsync -r -e 'ssh -i /var/lib/jenkins/.ssh/id_rsa' ${workspace}/ ${TARGET_SERVER}:${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/"
                 }
             }
         }
     }
-
-    post {
-        always {
-            // Clean up
-            deleteDir()
-        }
-    }
-}
-
-def error(message) {
-    echo "Error: ${message}"
-    currentBuild.result = 'FAILURE'
-    error("${message}")
 }
