@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        SSH_KEY = credentials('e06285f3-0d2d-434a-91a4-05aecbcbf5a7')
-        TARGET_SERVER = 'ubuntu@13.232.231.36'
+        SSH_KEY = credentials('e8874ee0-5c49-426f-b66a-ecaf072bab9e')
+        TARGET_SERVER = 'ubuntu@15.207.71.31'
         BASE_TARGET_DIR = '/home/ubuntu/'
         ARTIFACT_DIR = 'dist' // Set to the relative path of the 'dist' folder in your project
     }
