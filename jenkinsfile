@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        SSH_KEY = credentials('e8874ee0-5c49-426f-b66a-ecaf072bab9e')
-        TARGET_SERVER = 'ubuntu@15.207.71.31'
+        SSH_KEY = credentials('e06285f3-0d2d-434a-91a4-05aecbcbf5a7')
+        TARGET_SERVER = 'ubuntu@13.232.231.36'
         BASE_TARGET_DIR = '/home/ubuntu'
     }
 
@@ -34,11 +34,14 @@ pipeline {
                     // Create an SSH configuration file to disable strict host key checking
                     sh 'echo "Host *\n  StrictHostKeyChecking no" > /var/lib/jenkins/.ssh/config'
 
-                    // Use ssh-agent to run the SSH command
-                    sshagent(credentials: [SSH_KEY]) {
-                        // Run the command as the jenkins user without sudo
-                        sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ${TARGET_SERVER} 'mkdir -p ${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}'"
-                    }
+                    // Create 'dist' directory if it doesn't exist
+                    sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ${TARGET_SERVER} 'mkdir -p ${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/dist'"
+
+                    // Use rsync to copy the 'dist' directory to the target server
+                    sh "rsync -r -e 'ssh -i /var/lib/jenkins/.ssh/id_rsa' ${workspace}/dist/ ${TARGET_SERVER}:${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/"
+
+                    // Run npm i -f in the target directory
+                    sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ${TARGET_SERVER} 'cd ${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/dist/ && npm i -f'"
                 }
             }
         }
@@ -54,30 +57,6 @@ pipeline {
 
                     // Install npm version 8 globally
                     sh 'npm install -g npm@8'
-                }
-            }
-        }
-
-        stage('Deploy Node.js Project') {
-            steps {
-                script {
-                    // Create 'dist' directory if it doesn't exist
-                    sh "mkdir -p /var/lib/jenkins/workspace/newnd_Development/dist/"
-
-                    // Assuming your Node.js project is in the current workspace
-                    def workspace = pwd()
-
-                    // Use rsync to copy the 'dist' directory to the target server
-                    sh "rsync -r -e 'ssh -i /var/lib/jenkins/.ssh/id_rsa' ${workspace}/dist/ ${TARGET_SERVER}:${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/"
-                }
-            }
-        }
-
-        stage('Run npm i -f') {
-            steps {
-                script {
-                    // Run npm i -f in the target directory
-                    sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ${TARGET_SERVER} 'cd ${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/dist/ && npm i -f'"
                 }
             }
         }
