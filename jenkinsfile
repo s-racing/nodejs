@@ -8,13 +8,6 @@ pipeline {
     }
 
     stages {
-        stage('Build') {
-            steps {
-                // Your build steps here
-                // e.g., npm install, npm build, etc.
-            }
-        }
-
         stage('Deploy to Target Server') {
             steps {
                 script {
@@ -27,11 +20,8 @@ pipeline {
 
                     // Use ssh-agent to run the SSH command
                     sshagent(credentials: [SSH_KEY]) {
-                        // Assuming you have built artifacts in the current workspace
-                        def artifactsDir = "${env.WORKSPACE}/dist"  // Adjust this based on your build output directory
-
-                        // Use rsync to copy the built artifacts to the target server
-                        sh "rsync -r -e 'ssh -i /var/lib/jenkins/.ssh/id_rsa' ${artifactsDir}/ ${TARGET_SERVER}:${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/"
+                        // Run the command as the jenkins user without sudo
+                        sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ${TARGET_SERVER} 'mkdir -p ${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}'"
                     }
                 }
             }
@@ -40,18 +30,32 @@ pipeline {
         stage('Install Node.js and npm') {
             steps {
                 script {
-                    // Install Node.js using the NodeJS Jenkins plugin
-                    // 'nodejs' should match the tool name you configured in Jenkins
-                    def nodejsInstallation = tool name: 'nodejs', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
-                    def nodejsHome = "${nodejsInstallation}/bin"
-                    env.PATH = "${nodejsHome}:${env.PATH}"
+                    // Navigate to the Jenkins workspace
+                    dir('/var/lib/jenkins/workspace/nodejs') {
+                        // Install Node.js using the NodeJS Jenkins plugin
+                        def nodejsInstallation = tool name: 'nodejs', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
+                        def nodejsHome = "${nodejsInstallation}/bin"
+                        env.PATH = "${nodejsHome}:${env.PATH}"
 
-                    // Install npm version 8 globally
-                    sh 'npm install -g npm@8'
+                        // Install npm version 8 globally
+                        sh 'npm install -g npm@8'
+                    }
                 }
+            }
+        }
 
+        stage('Build Node.js Project') {
+            steps {
+                script {
+                    // Navigate to the Node.js project directory and run npm install with force
+                    dir('/var/lib/jenkins/workspace/nodejs') {
+                        sh 'npm install -f'
+                        sh 'npm run build'  // Adjust the script based on your project's build command
+                    }
+                }
+            }
+        }
 
-
-
-
-
+        // Add more stages as needed for your pipeline...
+    }
+}
