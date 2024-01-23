@@ -11,6 +11,7 @@ pipeline {
 
     tools {
         nodejs 'nodejs'
+        git 'git'
     }
 
     stages {
@@ -79,4 +80,3 @@ pipeline {
         }
     }
 }
-
