@@ -27,26 +27,30 @@ pipeline {
             }
         }
 
-        stage('Install Node.js and npm') {
-            steps {
-                script {
-                    // Install Node.js using the NodeJS Jenkins plugin
-                    // 'nodejs' should match the tool name you configured in Jenkins
-                    def nodejsInstallation = tool name: 'nodejs', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
-                    def nodejsHome = "${nodejsInstallation}/bin"
-                    env.PATH = "${nodejsHome}:${env.PATH}"
-
-                    // Install npm version 8 globally
-                    sh 'npm install -g npm@8'
-                }
-            }
-        }
-
-        stage('Deploy Node.js Project') {
+        stage('Build and Deploy Node.js Project') {
             steps {
                 script {
                     // Assuming your Node.js project is in the current workspace
                     def workspace = pwd()
+
+                    // Check if 'dist' directory exists
+                    def distExists = fileExists("${workspace}/dist")
+
+                    // If 'dist' directory doesn't exist, build the Node.js project
+                    if (!distExists) {
+                        // Install Node.js using the NodeJS Jenkins plugin
+                        // 'nodejs' should match the tool name you configured in Jenkins
+                        def nodejsInstallation = tool name: 'nodejs', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
+                        def nodejsHome = "${nodejsInstallation}/bin"
+                        env.PATH = "${nodejsHome}:${env.PATH}"
+
+                        // Install npm version 8 globally
+                        sh 'npm install -g npm@8'
+
+                        // Build the Node.js project
+                        sh "npm install"
+                        sh "npm run build" // Adjust this line based on your build command
+                    }
 
                     // Use rsync to copy the project to the target server
                     sh "rsync -r -e 'ssh -i /var/lib/jenkins/.ssh/id_rsa' ${workspace}/ ${TARGET_SERVER}:${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/"
