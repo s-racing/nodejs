@@ -21,7 +21,9 @@ pipeline {
                     // Use ssh-agent to run the SSH command
                     sshagent(credentials: [SSH_KEY]) {
                         // Run the command as the jenkins user without sudo
-                        sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ${TARGET_SERVER} 'mkdir -p ${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}'"
+                        withCredentials([sshUserPrivateKey(credentialsId: 'e8874ee0-5c49-426f-b66a-ecaf072bab9e', keyFileVariable: 'SSH_KEY_PATH')]) {
+                            sh "ssh -i ${SSH_KEY_PATH} ${TARGET_SERVER} 'mkdir -p ${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}'"
+                        }
                     }
                 }
             }
@@ -45,11 +47,9 @@ pipeline {
         stage('Build Node.js Project') {
             steps {
                 script {
-                    // Navigate to the Node.js project directory and run npm install, npm i -f, and build
+                    // Navigate to the Node.js project directory and run npm install
                     dir('/var/lib/jenkins/workspace/nodejs') {
                         sh 'npm install'
-                        sh 'npm i -f'
-                        sh 'npm run build' // Replace 'build' with your actual build script if defined in package.json
                     }
                 }
             }
@@ -62,7 +62,7 @@ pipeline {
                     def workspace = pwd()
 
                     // Use rsync to copy the project to the target server
-                    sh "rsync -r -e 'ssh -i /var/lib/jenkins/.ssh/id_rsa' ${workspace}/ ${TARGET_SERVER}:${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/"
+                    sh "rsync -r -e 'ssh -i ${SSH_KEY_PATH}' ${workspace}/ ${TARGET_SERVER}:${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/"
                 }
             }
         }
