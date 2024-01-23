@@ -2,13 +2,28 @@ pipeline {
     agent any
 
     environment {
-        SSH_KEY = credentials('e8874ee0-5c49-426f-b66a-ecaf072bab9e')
-        TARGET_SERVER = 'ubuntu@15.207.71.31'
-        BASE_TARGET_DIR = '/home/ubuntu/'
-        ARTIFACT_DIR = 'dist' // Set to the relative path of the 'dist' folder in your project
+        SSH_KEY = credentials('e06285f3-0d2d-434a-91a4-05aecbcbf5a7')
+        TARGET_SERVER = 'ubuntu@13.232.231.36'
+        BASE_TARGET_DIR = '/home/ubuntu'
     }
 
     stages {
+        stage('Build Node.js Project') {
+            steps {
+                script {
+                    // Assuming your Node.js project is in the current workspace
+                    def workspace = pwd()
+
+                    // Change to the project directory
+                    dir(workspace) {
+                        // Install project dependencies and build
+                        sh 'npm install'
+                        sh 'npm run build'
+                    }
+                }
+            }
+        }
+
         stage('Deploy to Target Server') {
             steps {
                 script {
@@ -22,7 +37,7 @@ pipeline {
                     // Use ssh-agent to run the SSH command
                     sshagent(credentials: [SSH_KEY]) {
                         // Run the command as the jenkins user without sudo
-                        sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ${TARGET_SERVER} 'mkdir -p ${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/${ARTIFACT_DIR}'"
+                        sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ${TARGET_SERVER} 'mkdir -p ${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}'"
                     }
                 }
             }
@@ -46,11 +61,14 @@ pipeline {
         stage('Deploy Node.js Project') {
             steps {
                 script {
+                    // Create 'dist' directory if it doesn't exist
+                    sh "mkdir -p /var/lib/jenkins/workspace/newnd_Development/dist/"
+
                     // Assuming your Node.js project is in the current workspace
                     def workspace = pwd()
 
-                    // Use rsync to copy the 'dist' folder to the target server
-                    sh "rsync -r -e 'ssh -i /var/lib/jenkins/.ssh/id_rsa' ${workspace}/${ARTIFACT_DIR}/ ${TARGET_SERVER}:${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/${ARTIFACT_DIR}/"
+                    // Use rsync to copy the 'dist' directory to the target server
+                    sh "rsync -r -e 'ssh -i /var/lib/jenkins/.ssh/id_rsa' ${workspace}/dist/ ${TARGET_SERVER}:${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/"
                 }
             }
         }
@@ -58,10 +76,8 @@ pipeline {
         stage('Run npm i -f') {
             steps {
                 script {
-                    // Run npm i -f on the target server
-                    sshagent(credentials: [SSH_KEY]) {
-                        sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ${TARGET_SERVER} 'cd ${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/${ARTIFACT_DIR} && npm i -f'"
-                    }
+                    // Run npm i -f in the target directory
+                    sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ${TARGET_SERVER} 'cd ${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/dist/ && npm i -f'"
                 }
             }
         }
