@@ -8,6 +8,13 @@ pipeline {
     }
 
     stages {
+        stage('Build') {
+            steps {
+                // Your build steps here
+                // e.g., npm install, npm build, etc.
+            }
+        }
+
         stage('Deploy to Target Server') {
             steps {
                 script {
@@ -20,8 +27,11 @@ pipeline {
 
                     // Use ssh-agent to run the SSH command
                     sshagent(credentials: [SSH_KEY]) {
-                        // Run the command as the jenkins user without sudo
-                        sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ${TARGET_SERVER} 'mkdir -p ${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}'"
+                        // Assuming you have built artifacts in the current workspace
+                        def artifactsDir = "${env.WORKSPACE}/dist"  // Adjust this based on your build output directory
+
+                        // Use rsync to copy the built artifacts to the target server
+                        sh "rsync -r -e 'ssh -i /var/lib/jenkins/.ssh/id_rsa' ${artifactsDir}/ ${TARGET_SERVER}:${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/"
                     }
                 }
             }
@@ -38,18 +48,6 @@ pipeline {
 
                     // Install npm version 8 globally
                     sh 'npm install -g npm@8'
-                }
-            }
-        }
-
-        stage('Deploy Node.js Project') {
-            steps {
-                script {
-                    // Assuming your Node.js project is in the current workspace
-                    def workspace = pwd()
-
-                    // Use rsync to copy the project to the target server
-                    sh "rsync -r -e 'ssh -i /var/lib/jenkins/.ssh/id_rsa' ${workspace}/ ${TARGET_SERVER}:${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/"
                 }
             }
         }
