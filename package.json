@@ -4,7 +4,8 @@
   "description": "Simple Node.js project",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "build": "mkdir -p build && cp -R src/* build/"
   },
   "dependencies": {
     "express": "^4.17.3"
