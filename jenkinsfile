@@ -11,17 +11,15 @@ pipeline {
         stage('Deploy to Target Server') {
             steps {
                 script {
-                    // Copy SSH key to Jenkins user's home directory
-                    sh "sudo cp /root/.ssh/id_rsa /var/lib/jenkins/.ssh/"
-                    sh "sudo chown jenkins:jenkins /var/lib/jenkins/.ssh/id_rsa"
-
-                    // Create an SSH configuration file to disable strict host key checking
-                    sh 'echo "Host *\n  StrictHostKeyChecking no" > /var/lib/jenkins/.ssh/config'
-
-                    // Use ssh-agent to run the SSH command
+                    // Use sshagent to run the SSH command with credentials
                     sshagent(credentials: [SSH_KEY]) {
-                        // Run the command as the jenkins user without sudo
-                        sh "ssh -i /var/lib/jenkins/.ssh/id_rsa ${TARGET_SERVER} 'mkdir -p ${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}'"
+                        // Run the command with options and handle errors
+                        def result = sh script: "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/id_rsa ${TARGET_SERVER} 'mkdir -p ${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}'", returnStatus: true
+
+                        // Check the exit code and handle accordingly
+                        if (result != 0) {
+                            error "Failed to execute the SSH command. Exit code: ${result}"
+                        }
                     }
                 }
             }
@@ -30,14 +28,16 @@ pipeline {
         stage('Install Node.js and npm') {
             steps {
                 script {
-                    // Install Node.js using the NodeJS Jenkins plugin
-                    // 'nodejs' should match the tool name you configured in Jenkins
-                    def nodejsInstallation = tool name: 'nodejs', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
+                    // Use the Node.js installation configured in Jenkins
+                    def nodejsInstallation = tool 'nodejs'
                     def nodejsHome = "${nodejsInstallation}/bin"
                     env.PATH = "${nodejsHome}:${env.PATH}"
 
                     // Install npm version 8 globally
-                    sh 'npm install -g npm@8'
+                    def npmInstallResult = sh(script: 'npm install -g npm@8', returnStatus: true)
+                    if (npmInstallResult != 0) {
+                        error "Failed to install npm. Exit code: ${npmInstallResult}"
+                    }
                 }
             }
         }
@@ -49,7 +49,12 @@ pipeline {
                     def workspace = pwd()
 
                     // Use rsync to copy the project to the target server
-                    sh "rsync -r -e 'ssh -i /var/lib/jenkins/.ssh/id_rsa' ${workspace}/ ${TARGET_SERVER}:${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/"
+                    def rsyncResult = sh(script: "rsync -r -e 'ssh -i /var/lib/jenkins/.ssh/id_rsa' ${workspace}/ ${TARGET_SERVER}:${BASE_TARGET_DIR}/${env.BRANCH_NAME.toLowerCase()}/", returnStatus: true)
+
+                    // Check the exit code and handle accordingly
+                    if (rsyncResult != 0) {
+                        error "Failed to execute rsync command. Exit code: ${rsyncResult}"
+                    }
                 }
             }
         }
