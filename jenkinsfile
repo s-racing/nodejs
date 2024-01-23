@@ -5,9 +5,28 @@ pipeline {
         SSH_KEY = credentials('e8874ee0-5c49-426f-b66a-ecaf072bab9e')
         TARGET_SERVER = 'ubuntu@15.207.71.31'
         BASE_TARGET_DIR = '/home/ubuntu'
+        NVM_DIR = '/root/.nvm'
+        NODE_VERSION = '16.20.1'
     }
 
     stages {
+        stage('Set Up Node.js') {
+            steps {
+                script {
+                    // Set up nvm
+                    echo 'Setting up nvm...'
+                    sh "export NVM_DIR=${NVM_DIR}"
+                    sh "[ -s \"${NVM_DIR}/nvm.sh\" ] && . \"${NVM_DIR}/nvm.sh\""
+                    sh "[ -s \"${NVM_DIR}/bash_completion\" ] && . \"${NVM_DIR}/bash_completion\""
+
+                    // Install Node.js version
+                    echo "Installing Node.js version ${NODE_VERSION}..."
+                    sh "nvm install ${NODE_VERSION}"
+                    sh "nvm use ${NODE_VERSION}"
+                }
+            }
+        }
+
         stage('Deploy to Target Server') {
             steps {
                 script {
@@ -34,6 +53,7 @@ pipeline {
                     def workspace = pwd()
 
                     // Build the Node.js project
+                    sh "export PATH=${NVM_DIR}/versions/node/${NODE_VERSION}/bin:${PATH}"
                     sh "npm install"
                     sh "npm run build" // Adjust this line based on your build command
 
@@ -56,4 +76,3 @@ pipeline {
         }
     }
 }
-
