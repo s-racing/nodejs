@@ -9,6 +9,10 @@ pipeline {
         NODE_VERSION = '16.20.1'
     }
 
+    tools {
+        nodejs 'nodejs'
+    }
+
     stages {
         stage('Set Up Node.js') {
             steps {
@@ -16,8 +20,8 @@ pipeline {
                     // Set up nvm
                     echo 'Setting up nvm...'
                     sh "export NVM_DIR=${NVM_DIR}"
-                    sh "[ -s \"${NVM_DIR}/nvm.sh\" ] && . \"${NVM_DIR}/nvm.sh\""
-                    sh "[ -s \"${NVM_DIR}/bash_completion\" ] && . \"${NVM_DIR}/bash_completion\""
+                    sh "[ -s '${NVM_DIR}/nvm.sh' ] && . '${NVM_DIR}/nvm.sh'"
+                    sh "[ -s '${NVM_DIR}/bash_completion' ] && . '${NVM_DIR}/bash_completion'"
 
                     // Install Node.js version
                     echo "Installing Node.js version ${NODE_VERSION}..."
@@ -53,7 +57,6 @@ pipeline {
                     def workspace = pwd()
 
                     // Build the Node.js project
-                    sh "export PATH=${NVM_DIR}/versions/node/${NODE_VERSION}/bin:${PATH}"
                     sh "npm install"
                     sh "npm run build" // Adjust this line based on your build command
 
@@ -76,3 +79,4 @@ pipeline {
         }
     }
 }
+
