@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        SSH_KEY = credentials('e8874ee0-5c49-426f-b66a-ecaf072bab9e')
-        TARGET_SERVER = 'ubuntu@15.207.71.31'
+        SSH_KEY = credentials('f8a22668-eb36-43a9-8d31-7d49bd9f3314')
+        TARGET_SERVER = 'ubuntu@44.211.77.205'
         BASE_TARGET_DIR = '/home/ubuntu'
     }
 
