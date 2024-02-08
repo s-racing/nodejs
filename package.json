@@ -1,13 +1,18 @@
 {
-  "name": "project-bookmanagementgroup11",
+  "name": "my-node-project",
   "version": "1.0.0",
-  "description": "Simple Node.js project",
-  "main": "src/index.js",
+  "description": "A simple Node.js project",
+  "main": "app.js",
   "scripts": {
-    "start": "node src/index.js",
-    "build": "mkdir -p build && cp -R src/* build/"
+    "start": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "author": "Your Name",
+  "license": "ISC",
   "dependencies": {
-    "express": "^4.17.3"
+    "express": "^4.17.1",
+    "mysql": "^2.18.1",
+    "pm2": "^5.1.0",
+    "dotenv": "^16.0.0"
   }
 }
